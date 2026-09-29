@@ -108,6 +108,27 @@ jobs:
           emit "validate" WebGame/validate.log
           emit "nodesmoke" WebGame/nodesmoke.log
 
+      - name: Ship QA screenshots (git branch)
+        if: always()
+        shell: bash
+        env:
+          GH: ${{ github.repository }}
+        run: |
+          set +e
+          STAGE=/tmp/shots-$(date +%s)
+          mkdir -p "$STAGE"
+          if [ -d WebGame/scripts/shots ]; then cp -r WebGame/scripts/shots "$STAGE/shots"; fi
+          cp WebGame/qa.log "$STAGE/" 2>/dev/null
+          echo "run ${GITHUB_RUN_ID} - $(date -u +%FT%TZ)" > "$STAGE/SUMMARY.txt"
+          cd "$STAGE"
+          git init -q .
+          git config user.email "ci@users.noreply.github.com"
+          git config user.name "CI screenshots"
+          git add -A
+          git commit -qm "qa screenshots ${GITHUB_SHA}"
+          git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GH}.git" HEAD:refs/heads/qa-shots
+          echo "::notice::screenshots pushed to qa-shots"
+
       - name: Publish diagnostics (git branch)
         if: always()
         env:

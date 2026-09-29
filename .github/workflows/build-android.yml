@@ -141,8 +141,41 @@ jobs:
           retention-days: 90
           path: release-package/
 
+      - name: Ship the built files out (git branch for download)
+      - name: Ship the built files out (git branch for download)
+        if: always()
+        shell: bash
+        env:
+          GH: ${{ github.repository }}
+        run: |
+          set +e
+          STAGE=/tmp/art-$(date +%s)
+          mkdir -p "$STAGE"
+          n=0
+          for f in release-package/*.exe release-package/*.apk release-package/*.zip release-package/*.sha256; do
+            [ -f "$f" ] && cp "$f" "$STAGE/" && n=$((n+1))
+          done
+          if [ "$n" -eq 0 ]; then echo "::notice::no built files to ship"; exit 0; fi
+          ls -lh "$STAGE"
+          cd "$STAGE"
+          cat > MANIFEST.txt <<EOF
+Ambedkar: The Digital Heritage Journey
+SIH 2026 - Problem SIH26096 - Team Binary Coders
+built from commit ${GITHUB_SHA}
+workflow run: ${GITHUB_RUN_ID}
+$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+EOF
+          git init -q .
+          git config user.email "ci@users.noreply.github.com"
+          git config user.name "CI build output"
+          git add -A
+          git commit -qm "build output ${GITHUB_SHA}"
+          git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GH}.git" HEAD:refs/heads/build-artifacts
+          echo "::notice::shipped $n file(s) to build-artifacts"
+
       - name: Publish to GitHub Release
         if: github.ref == 'refs/heads/arena/01a0ebb5-sih'
+        continue-on-error: true
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-v1.0.0
