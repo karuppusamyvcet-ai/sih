@@ -1,0 +1,10 @@
+// Top-level build file. No plugins applied here; the app module declares them.
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
+}

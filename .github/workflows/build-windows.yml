@@ -1,0 +1,96 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: ["arena/01a0ebb5-sih"]
+    paths:
+      - "WebGame/**"
+      - "Assets/**"
+      - ".github/workflows/build-windows.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: win-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: electron-builder → Windows x64
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: WebGame/package-lock.json
+
+      - name: Install game dependencies
+        working-directory: WebGame
+        run: npm ci
+
+      - name: Build the game (web assets)
+        working-directory: WebGame
+        run: npm run build
+
+      - name: Sanity check the build
+        shell: pwsh
+        run: |
+          $need = @('index.html','game.js','styles.css','content\exhibits.json','content\archive_items.json','localization\en.json','art\Textures\marble_cream.png','audio\Music\museum_theme_loop.wav')
+          foreach ($n in $need) { if (-not (Test-Path "WebGame\dist\game\$n")) { throw "missing $n" } }
+          Write-Host "build ok"
+
+      - name: Install electron + builder
+        working-directory: WebGame/electron
+        run: npm install --no-audit --no-fund
+
+      - name: Build installer + portable exe
+        working-directory: WebGame/electron
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --x64 --publish never
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release-package | Out-Null
+          Get-ChildItem WebGame\electron\release\*.exe, WebGame\electron\release\*.zip, WebGame\electron\release\latest*.yml -ErrorAction SilentlyContinue |
+            Copy-Item -Destination release-package
+          Copy-Item WebGame\dist\game\build.json release-package\build.json
+          Get-ChildItem release-package | Format-Table Name, Length
+          if (-not (Get-ChildItem release-package\*.exe -ErrorAction SilentlyContinue)) { throw "no exe produced" }
+
+      - name: Compress release folder
+        shell: pwsh
+        run: Compress-Archive -Path release-package\* -DestinationPath AmbedkarDigitalHeritage-Windows-x64.zip
+
+      - name: Upload EXE artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AmbedkarDigitalHeritage-Windows-x64
+          retention-days: 90
+          path: |
+            AmbedkarDigitalHeritage-Windows-x64.zip
+            release-package/
+
+      - name: Publish to GitHub Release
+        if: github.ref == 'refs/heads/arena/01a0ebb5-sih'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: windows-v1.0.0
+          name: Ambedkar Digital Heritage — Windows x64
+          body: |
+            **Ambedkar: The Digital Heritage Journey** — Windows x64 build.
+
+            SIH 2026 · Problem SIH26096 · Team Binary Coders
+
+            * `AmbedkarDigitalHeritage-1.0.0-x64.exe` — installer (choose install folder, desktop + start-menu shortcuts)
+            * `AmbedkarDigitalHeritage-1.0.0-portable.exe` — single-file portable build, no installation
+
+            Fully offline: six galleries, 35 archive records, 4 knowledge checkpoints,
+            an offline AI Archive Guide that cites its sources, save/load and accessibility options.
+          files: |
+            AmbedkarDigitalHeritage-Windows-x64.zip
+            release-package/*

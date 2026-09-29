@@ -1,0 +1,19 @@
+{
+  "name": "ambedkar-digital-heritage-game",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ambedkar: The Digital Heritage Journey — web game core (EXE/APK/preview)",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch"
+  },
+  "dependencies": {
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2",
+    "puppeteer-core": "23.11.1",
+    "@sparticuz/chromium": "131.0.1"
+  }
+}

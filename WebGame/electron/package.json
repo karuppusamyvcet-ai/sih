@@ -1,0 +1,51 @@
+{
+  "name": "ambedkar-digital-heritage",
+  "productName": "Ambedkar Digital Heritage",
+  "version": "1.0.0",
+  "description": "Ambedkar: The Digital Heritage Journey — offline educational 3D museum (SIH 2026 · SIH26096)",
+  "main": "main.cjs",
+  "author": "Team Binary Coders",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dist": "electron-builder --win --x64",
+    "dist:portable": "electron-builder --win portable --x64",
+    "dist:dir": "electron-builder --win dir --x64"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.sih26096.binarycoders.ambedkardigitalheritage",
+    "productName": "Ambedkar Digital Heritage",
+    "copyright": "SIH 2026 - Team Binary Coders",
+    "directories": { "output": "release", "buildResources": "res" },
+    "files": ["main.cjs", "package.json"],
+    "extraResources": [
+      { "from": "../dist/game", "to": "game" }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "res/icon.png",
+      "artifactName": "AmbedkarDigitalHeritage-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Ambedkar Digital Heritage",
+      "installerLanguages": ["en_US"]
+    },
+    "portable": {
+      "artifactName": "AmbedkarDigitalHeritage-${version}-portable.exe"
+    },
+    "compression": "maximum",
+    "removePackageScripts": true
+  }
+}

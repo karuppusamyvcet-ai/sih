@@ -1,0 +1,68 @@
+name: Game QA (headless browser)
+
+on:
+  push:
+    branches: ["arena/01a0ebb5-sih"]
+    paths:
+      - "WebGame/**"
+      - "Assets/**"
+      - ".github/workflows/game-qa.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    name: Build + play through the game
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: WebGame/package-lock.json
+
+      - name: Install dependencies
+        working-directory: WebGame
+        run: npm ci
+
+      - name: Validate content + AI retrieval (ProjectValidator equivalent)
+        working-directory: WebGame
+        run: node scripts/validate.mjs | tee validate.log
+
+      - name: Build the game
+        working-directory: WebGame
+        run: npm run build
+
+      - name: Bundle the game (zip for the live preview / download)
+        working-directory: WebGame
+        run: |
+          cd dist && zip -qr ../../AmbedkarDigitalHeritage-web.zip game && cd ..
+          ls -lh AmbedkarDigitalHeritage-web.zip
+
+      - name: Run headless play-through QA
+        working-directory: WebGame
+        continue-on-error: true
+        run: node scripts/qa.mjs --port 8410 | tee qa.log
+
+      - name: Show QA screenshots
+        if: always()
+        run: ls -la WebGame/scripts/shots/ || true
+
+      - name: Upload web build + screenshots + logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build-and-qa
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            AmbedkarDigitalHeritage-web.zip
+            WebGame/scripts/shots/
+            WebGame/qa.log
+            WebGame/validate.log

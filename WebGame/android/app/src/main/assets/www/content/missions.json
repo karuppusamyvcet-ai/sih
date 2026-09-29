@@ -1,0 +1,75 @@
+{
+  "missions": [
+    {
+      "id": "m1_enter",
+      "title": "Enter the Digital Heritage Museum",
+      "brief": "Welcome. Walk through the grand entrance and speak with the Archive Guide terminal at the reception desk.",
+      "objective": "Reach the Archive Guide terminal in the lobby",
+      "type": "Interact",
+      "targetId": "kiosk_guide",
+      "xp": 20
+    },
+    {
+      "id": "m2_earlylife",
+      "title": "Discover Early Life",
+      "brief": "Door 1 — Early Life & Education. Walk the timeline from 1891 to 1923 and open at least two exhibits.",
+      "objective": "Open 2 exhibits in the Early Life gallery",
+      "type": "DiscoverExhibits",
+      "zone": "early_life",
+      "count": 2,
+      "xp": 40
+    },
+    {
+      "id": "m3_reform",
+      "title": "Explore Social Reform",
+      "brief": "Door 2 — Social Reform. Study the movement and complete the Match & Verify challenge.",
+      "objective": "Complete the Social Reform quiz",
+      "type": "CompleteQuiz",
+      "quizId": "quiz_social_reform",
+      "xp": 60
+    },
+    {
+      "id": "m4_constitution",
+      "title": "Enter the Constitution Gallery",
+      "brief": "Door 3 — Law & Constitution. Read the Preamble at the Constitution Table and pass the Preamble Challenge.",
+      "objective": "Pass the Constitution quiz",
+      "type": "CompleteQuiz",
+      "quizId": "quiz_constitution",
+      "xp": 60
+    },
+    {
+      "id": "m5_archive",
+      "title": "Search the Manuscript Archive",
+      "brief": "Door 4 — Books, Manuscripts & Scholarship. Use the archive terminal to search the collection.",
+      "objective": "Run a search at the archive terminal",
+      "type": "SearchArchive",
+      "xp": 40
+    },
+    {
+      "id": "m6_memorials",
+      "title": "Visit the Digital Memorials",
+      "brief": "Door 5 — Memorials & Historical Places. Choose a site on the memorial map and visit its reconstruction.",
+      "objective": "Visit 2 memorial reconstructions",
+      "type": "VisitMemorials",
+      "count": 2,
+      "xp": 50
+    },
+    {
+      "id": "m7_legacy",
+      "title": "Complete the Legacy Archive",
+      "brief": "Door 6 — Legacy & Digital Archive. Ask the Archive Guide a question and review your Digital Archive collection.",
+      "objective": "Ask the AI Archive Guide one question",
+      "type": "AskAssistant",
+      "xp": 40
+    },
+    {
+      "id": "m8_final",
+      "title": "Final Knowledge Challenge",
+      "brief": "Return to the Legacy Archive's Knowledge Centre. Complete the multi-stage final challenge to earn the title HERITAGE ARCHIVIST.",
+      "objective": "Pass the Final Knowledge Challenge",
+      "type": "CompleteQuiz",
+      "quizId": "quiz_final",
+      "xp": 100
+    }
+  ]
+}

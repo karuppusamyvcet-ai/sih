@@ -1,0 +1,116 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: ["arena/01a0ebb5-sih"]
+    paths:
+      - "WebGame/**"
+      - "Assets/**"
+      - ".github/workflows/build-android.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: gradle assembleRelease → signed APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: WebGame/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install game dependencies
+        working-directory: WebGame
+        run: npm ci
+
+      - name: Build the game
+        working-directory: WebGame
+        run: npm run build
+
+      - name: Sync the game into Android assets
+        working-directory: WebGame
+        run: node scripts/sync-android.mjs
+
+      - name: Android SDK setup
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" > /dev/null
+
+      - name: Create release keystore
+        working-directory: WebGame/android
+        run: |
+          keytool -genkeypair -v \
+            -keystore dhj-release.keystore \
+            -alias dhj -keyalg RSA -keysize 2048 -validity 10950 \
+            -storepass ambedkar2026 -keypass ambedkar2026 \
+            -dname "CN=Team Binary Coders, OU=SIH26096, O=Digital Ambedkar Heritage, L=Erode, S=TN, C=IN"
+
+      - name: Build release APK
+        working-directory: WebGame/android
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.7 --distribution-type bin
+          fi
+          chmod +x gradlew
+          ./gradlew --no-daemon clean assembleRelease
+
+      - name: Collect APK
+        working-directory: WebGame/android
+        run: |
+          mkdir -p ../../release-package
+          find app/build/outputs/apk -name "*.apk" -exec cp {} ../../release-package/ \;
+          cp app/build/outputs/apk/release/output-metadata.json ../../release-package/ 2>/dev/null || true
+          ls -lh ../../release-package
+          if ! ls ../../release-package/*.apk > /dev/null 2>&1; then echo "no apk produced"; exit 1; fi
+
+      - name: Rename to deliverable name
+        working-directory: WebGame/android
+        run: |
+          cd ../../release-package
+          for f in *.apk; do
+            [ "$f" = "AmbedkarDigitalHeritage.apk" ] || mv "$f" AmbedkarDigitalHeritage.apk
+          done
+          sha256sum AmbedkarDigitalHeritage.apk | tee AmbedkarDigitalHeritage.apk.sha256
+          unzip -l AmbedkarDigitalHeritage.apk | grep -E "assets/www/index.html|assets/www/game.js" || true
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AmbedkarDigitalHeritage-Android-arm64
+          retention-days: 90
+          path: release-package/
+
+      - name: Publish to GitHub Release
+        if: github.ref == 'refs/heads/arena/01a0ebb5-sih'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-v1.0.0
+          name: Ambedkar Digital Heritage — Android APK
+          body: |
+            **Ambedkar: The Digital Heritage Journey** — Android build.
+
+            SIH 2026 · Problem SIH26096 · Team Binary Coders
+
+            * `AmbedkarDigitalHeritage.apk` — signed release APK (arm64-v8a + armeabi-v7a, minSdk 24, landscape)
+            * install: enable *Install unknown apps*, then open the APK
+            * checksum: see `AmbedkarDigitalHeritage.apk.sha256`
+
+            Fully offline — no permissions beyond vibration, no network calls.
+          files: |
+            release-package/AmbedkarDigitalHeritage.apk
+            release-package/AmbedkarDigitalHeritage.apk.sha256
