@@ -11,7 +11,7 @@
           "question": "Where was Dr. B. R. Ambedkar born on 14 April 1891?",
           "answers": ["Mhow (now Dr. Ambedkar Nagar)", "Nagpur", "Poona", "Baroda"],
           "correctIndex": 0,
-          "explanation": "He was born at Mhow in the Central Provinces, a army cantonment town where his father served. The site is today the Dr. Ambedkar Janmabhoomi memorial.",
+          "explanation": "He was born at Mhow in the Central Provinces, an army cantonment town where his father served. The site is today the Dr. Ambedkar Janmabhoomi memorial.",
           "source": "Archive: bio_birth_1891",
           "points": 10
         },
@@ -94,7 +94,7 @@
           "question": "Which principle does the phrase 'EQUALITY of status and of opportunity' most directly represent in the Preamble?",
           "answers": ["Justice", "Liberty", "Equality", "Fraternity"],
           "correctIndex": 2,
-          "explanation": "The Preamble secures four ideals: JUSTICE (social, economic, political), LIBERTY (of thought, expression, belief, faith, worship), EQUALITY (of status and opportunity), and FRATERNITY (assuring dignity of the individual and unity of the nation).",
+          "explanation": "The Preamble secures four ideals: JUSTICE (social, economic, political), LIBERTY (of thought, expression, belief, faith, worship), EQUALITY (of status and opportunity), and FRATERNITY (assuring dignity of the individual and unity and integrity of the nation).",
           "source": "Archive: const_preamble",
           "points": 10
         },
@@ -121,7 +121,7 @@
           "question": "Order these constitutional events:",
           "answers": ["Ambedkar becomes Law Minister (15 Aug 1947)", "Drafting Committee chairman elected (29 Aug 1947)", "Constitution adopted (26 Nov 1949)", "Constitution in force (26 Jan 1950)"],
           "correctOrder": [0, 1, 2, 3],
-          "explanation": "Fifteen days after Independence, Ambedkar was chosen to chair the Drafting Committee; adoption came on 26 Nov 1949 and enforcement on 26 Jan 1950.",
+          "explanation": "Two weeks after Independence, Ambedkar was chosen to chair the Drafting Committee; adoption came on 26 Nov 1949 and enforcement on 26 Jan 1950.",
           "source": "Archive: const_lawminister, const_drafting, const_adoption",
           "points": 15
         },
@@ -170,6 +170,15 @@
           "points": 15
         },
         {
+          "type": "MultipleChoice",
+          "question": "Constitutional question: which Article abolishes untouchability and forbids its practice in any form?",
+          "answers": ["Article 14", "Article 17", "Article 19", "Article 32"],
+          "correctIndex": 1,
+          "explanation": "Article 17, part of the Fundamental Rights in Part III, abolishes 'untouchability'. Article 14 guarantees equality before law, Article 19 protects freedoms such as speech and expression, and Article 32 is the right to move the Supreme Court to enforce fundamental rights.",
+          "source": "Archive: const_fundamental_rights",
+          "points": 15
+        },
+        {
           "type": "Ordering",
           "question": "Final timeline — order the whole arc:",
           "answers": ["Birth at Mhow (1891)", "Mahad Satyagraha (1927)", "Poona Pact (1932)", "Constitution adopted (1949)", "Conversion at Nagpur (1956)"],
@@ -196,7 +205,7 @@
             { "left": "Janmabhoomi memorial", "right": "Mhow" },
             { "left": "26 Alipur Road memorial", "right": "Delhi" }
           ],
-          "explanation": "Birth (Mhow), reform ground (many cities), cremation memorial (Mumbai), conversion ground (Nagpur), final residence (Delhi) — together they map a life.",
+          "explanation": "Birth (Mhow), cremation memorial (Mumbai), conversion ground (Nagpur), final residence (Delhi) — together they map a life.",
           "source": "Archive: Memorials category",
           "points": 20
         }

@@ -62,6 +62,11 @@ checkout + two menu clicks reconstructs the entire game.
 | Interact | E / left-click prompt | Interact button |
 | Map | M | Map button |
 | Menu / Back | Esc / Android Back | Back button |
+| Archive | Tab | Archive button |
+| Run | Shift | Run toggle |
+
+Gamepad (Windows, optional): left stick move · A interact · LB run · X map · Y archive · Start pause.
+The right-stick camera is not mapped, so use the mouse or the touch swipe for the camera.
 
 ## Structure
 
@@ -85,3 +90,37 @@ Tools/AssetGen/ deterministic art & audio generators (Python + numpy)
 - **Respectful reconstruction**: the character, the portrait, and the six memorial
   dioramas are labelled *Artistic visualization / Digital reconstruction* in-scene.
 - No ads, no monetization, no violence. Content is factual, sourced, dignified.
+
+## Command-line builds (fresh clone)
+
+`Assets/Scenes`, prefabs and the character are generated, not checked in. These
+entry points generate them and then build, and they exit non-zero on failure:
+
+```
+Unity -batchmode -nographics -projectPath . -executeMethod DHJ.EditorTools.BuildScript.BuildWindowsCI -logFile build_win.log
+Unity -batchmode -nographics -projectPath . -executeMethod DHJ.EditorTools.BuildScript.BuildAndroidCI -logFile build_android.log
+```
+
+Set `DHJ_ANDROID_ID=com.<yourteam>.ambedkardigitalheritage` to override the Android package id.
+
+## Status and known limitations (please read)
+
+- **Not yet compiled or built in Unity.** This repository was last edited in an environment
+  without the Unity Editor. Run **DHJ → 4 · Validate Project** and both builds on a machine with
+  Unity 2022.3 LTS (with Android Build Support) before relying on them. No EXE or APK is committed;
+  `Builds/` output is git-ignored.
+- **Character likeness is unverified.** See `Documentation/CharacterSpec.md`. The character is
+  procedural and must be calibrated against the supplied character sheet.
+- **Legacy Input Manager**, not the new Input System package. Gamepad covers buttons and the left
+  stick only.
+- **Content is a curated starter set** (35 archive records, 4 quizzes). Every record carries a
+  source, but please have a subject-matter reviewer check the dates, wording and sources before
+  public release. Media is placeholder artwork, labelled as such in-game.
+- **Localization:** English is complete (129 strings); Hindi has 49 and Tamil 41 of those, and missing keys fall back to English. The other languages are
+  scaffolded only.
+- **AI Guide is offline retrieval only.** There is no live LLM endpoint. Adding one would need a
+  REST client behind the same `KnowledgeAssistant` interface, still limited to retrieved archive text.
+- **Final challenge** is one seven-question quiz (memorial identification, document identification,
+  currency scholarship, a constitutional question, a timeline ordering, a true/false question and a
+  matching round). It is not a separate multi-scene stage flow.
+- Team, institution and mentor names are placeholders (`Documentation/TeamCredits.md`).

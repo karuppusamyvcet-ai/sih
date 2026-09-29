@@ -151,11 +151,11 @@ namespace DHJ.Core
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Escape)) HandleBackButton();   // Esc on PC, Back on Android
+            if (GameInput.PausePressed) HandleBackButton();   // Esc on PC, Back on Android
             if (State == GameState.Playing)
             {
                 if (GameInput.ArchivePressed) UI.UIManager.instance?.ShowArchive();
-                else if (Input.GetKeyDown(KeyCode.M)) UI.UIManager.instance?.ShowMap();
+                else if (GameInput.MapPressed) UI.UIManager.instance?.ShowMap();
 
                 int slot = (int)(Time.unscaledTime / 30f);
                 if (slot != _lastAutosaveSlot) { _lastAutosaveSlot = slot; CapturePlayerPosition(); Save.TickAutosave(); }
