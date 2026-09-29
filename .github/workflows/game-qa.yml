@@ -17,7 +17,7 @@ jobs:
   qa:
     name: Build + play through the game
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -35,24 +35,58 @@ jobs:
         working-directory: WebGame
         run: node scripts/validate.mjs | tee validate.log
 
+      - name: Headless world + mission walkthrough (no browser)
+        working-directory: WebGame
+        run: node scripts/nodesmoke.mjs | tee nodesmoke.log
+
+      - name: Verify the file:// payload used by the EXE and APK
+        working-directory: WebGame
+        run: node scripts/filesmoke.mjs | tee filesmoke.log
+
       - name: Build the game
         working-directory: WebGame
         run: npm run build
 
-      - name: Bundle the game (zip for the live preview / download)
-        working-directory: WebGame
+      - name: Bundle the game
         run: |
-          cd dist && zip -qr ../../AmbedkarDigitalHeritage-web.zip game && cd ..
-          ls -lh AmbedkarDigitalHeritage-web.zip
+          python3 - <<'PY'
+          import os, zipfile
+          root = 'WebGame/dist/game'
+          out = 'AmbedkarDigitalHeritage-web.zip'
+          n = 0
+          with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+              for base, _, files in os.walk(root):
+                  for f in files:
+                      p = os.path.join(base, f)
+                      z.write(p, os.path.relpath(p, 'WebGame/dist'))
+                      n += 1
+          print(f'{n} files -> {out} ({os.path.getsize(out)/1048576:.1f} MB)')
+          PY
 
       - name: Run headless play-through QA
         working-directory: WebGame
         continue-on-error: true
         run: node scripts/qa.mjs --port 8410 | tee qa.log
 
-      - name: Show QA screenshots
+      - name: Show QA report
         if: always()
-        run: ls -la WebGame/scripts/shots/ || true
+        run: |
+          echo "──────── QA report ────────"
+          cat WebGame/qa.log 2>/dev/null || echo "(no qa.log)"
+          echo "─────── screenshots ───────"
+          ls -la WebGame/scripts/shots/ 2>/dev/null || echo "(none)"
+
+      - name: Gate on the play-through result
+        if: always()
+        run: |
+          set -e
+          log=WebGame/qa.log
+          if [ ! -f "$log" ]; then echo "::error::QA did not run"; exit 1; fi
+          cat "$log"
+          if grep -qE "^=== [1-9][0-9]* failures" "$log"; then echo "::error::QA reported failures"; exit 1; fi
+          if grep -qE "^=== ERRORS \([1-9]" "$log"; then echo "::error::QA reported page errors"; exit 1; fi
+          if grep -qE "FAIL " "$log"; then echo "::error::QA has failed checks"; exit 1; fi
+          echo "QA passed ✅"
 
       - name: Upload web build + screenshots + logs
         if: always()
@@ -66,3 +100,5 @@ jobs:
             WebGame/scripts/shots/
             WebGame/qa.log
             WebGame/validate.log
+            WebGame/nodesmoke.log
+            WebGame/filesmoke.log
