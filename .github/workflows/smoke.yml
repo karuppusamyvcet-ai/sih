@@ -1,7 +1,9 @@
 name: smoke
-on: workflow_dispatch
+on:
+  push:
+    branches: [arena/01a0ebb5-sih]
 jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
-      - run: echo ok
+      - run: echo "smoke ok $GITHUB_SHA"
