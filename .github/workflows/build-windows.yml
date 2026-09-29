@@ -151,8 +151,10 @@ jobs:
           git config user.name "CI build output"
           git add -A
           git commit -qm "build output ${GITHUB_SHA}"
-          git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GH}.git" HEAD:refs/heads/build-artifacts
-          echo "::notice::shipped $n file(s) to build-artifacts"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GH}.git" HEAD:refs/heads/build-artifacts > /tmp/push.log 2>&1
+          rc=$?
+          head -c 1500 /tmp/push.log
+          echo "::notice title=ship::rc=$rc files=$n :: $(head -c 1200 /tmp/push.log | tr '\n' ' ')"
 
       - name: Publish to GitHub Release
         if: github.ref == 'refs/heads/arena/01a0ebb5-sih'
