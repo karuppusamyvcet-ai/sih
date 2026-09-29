@@ -1,0 +1,44 @@
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+
+# IDE
+.idea/
+.vs/
+.vscode/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Builds (final deliverables live in releases, not git)
+Builds/Windows/**
+Builds/Android/**
+!Builds/Windows/.gitkeep
+!Builds/Android/.gitkeep
+*.apk
+*.aab
+*.exe
+*.unitypackage
+
+# Crash reports / assets store
+crashlytics-build.properties
+/[Aa]ssets/[Aa]ssetStoreTools*
+
+# OS
+.DS_Store
+Thumbs.db
