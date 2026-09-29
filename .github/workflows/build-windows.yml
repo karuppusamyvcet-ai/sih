@@ -65,9 +65,11 @@ jobs:
           Get-ChildItem release-package | Format-Table Name, Length
           if (-not (Get-ChildItem release-package\*.exe -ErrorAction SilentlyContinue)) { throw "no exe produced" }
 
-      - name: Compress release folder
+      - name: Drop redundant copies from the package
         shell: pwsh
-        run: Compress-Archive -Path release-package\* -DestinationPath AmbedkarDigitalHeritage-Windows-x64.zip
+        run: |
+          Remove-Item release-package\*.zip -ErrorAction SilentlyContinue
+          Get-ChildItem release-package | Format-Table Name, @{n='MB';e={[math]::Round($_.Length/1MB,1)}}
 
 
       - name: Report failure detail
@@ -121,7 +123,6 @@ jobs:
           name: AmbedkarDigitalHeritage-Windows-x64
           retention-days: 90
           path: |
-            AmbedkarDigitalHeritage-Windows-x64.zip
             release-package/
 
       - name: Ship the built files out (git branch for download)
@@ -176,5 +177,4 @@ jobs:
             Fully offline: six galleries, 35 archive records, 4 knowledge checkpoints,
             an offline AI Archive Guide that cites its sources, save/load and accessibility options.
           files: |
-            AmbedkarDigitalHeritage-Windows-x64.zip
             release-package/*
