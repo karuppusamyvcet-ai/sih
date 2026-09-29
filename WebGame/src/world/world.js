@@ -59,7 +59,7 @@ export function createWorld(scene, ctx) {
     fill.position.set(-12, 14, -8);
     g.add(fill);
     // trilight ambient via hemisphere
-    const hemi = new THREE.HemisphereLight(sky || 0x8892a8, 0x4a4238, 0.75);
+    const hemi = new THREE.HemisphereLight(sky || 0x8892a8, 0x4a4238, 0.42);
     g.add(hemi);
     scene.fog = new THREE.FogExp2(fog, fogD);
     return g;

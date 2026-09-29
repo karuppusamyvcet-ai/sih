@@ -29,6 +29,9 @@ await new Promise((r) => server.listen(PORT, '0.0.0.0', r));
 console.log('serving', root, 'on', PORT);
 
 const errors = [];
+let failCount = 0;
+const failedChecks = [];
+const ok = (cond, msg) => { console.log((cond ? '  ok   ' : '  FAIL ') + msg); if (!cond) { failCount++; failedChecks.push(msg); } };
 const browser = await puppeteer.launch({
   args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox', '--enable-unsafe-swiftshader', '--use-gl=angle', '--use-angle=swiftshader'],
   executablePath: await chromium.executablePath(),
@@ -201,6 +204,126 @@ try {
   await page.evaluate(() => document.getElementById('btnProgress').click());
   await wait(400);
   await shot('18-pause-progress');
+  await page.keyboard.press('Escape');
+  await wait(300);
+
+  // --- full quiz run in the final gallery (all four question types) ---
+  await page.evaluate(async () => {
+    const d = window.__dhjDebug;
+    await d.travelTo('legacy', 'fromHub');
+  });
+  await wait(1800);
+  const quizRan = await page.evaluate(async () => {
+    const d = window.__dhjDebug;
+    const kiosk = d.world.current.interactables.find((i) => i.type === 'quiz');
+    if (!kiosk) return { error: 'no quiz kiosk in legacy' };
+    d.player.spawnAt({ x: kiosk.pos.x, z: kiosk.pos.z + 1.6, yaw: Math.PI });
+    return { ok: true, quizId: kiosk.exhibit && kiosk.exhibit.quizId };
+  });
+  await wait(400);
+  await page.keyboard.press('KeyE');
+  await wait(800);
+  const finalQuiz = await page.evaluate(() => {
+    const panel = document.getElementById('quizPanel');
+    if (panel.classList.contains('hidden')) return { open: false };
+    return { open: true, title: document.getElementById('quizTitle').textContent };
+  });
+  console.log('final quiz:', JSON.stringify({ ...quizRan, ...finalQuiz }));
+  ok(finalQuiz.open, 'final knowledge challenge opens');
+  if (finalQuiz.open) {
+    // answer every question correctly using the exposed data
+    const answeredAll = await page.evaluate(async () => {
+      const q = window.__dhjDebug.ctx.content.quizById.get('quiz_final');
+      const panel = document.getElementById('quizPanel');
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      for (let i = 0; i < q.questions.length; i++) {
+        const question = q.questions[i];
+        const body = document.getElementById('quizBody');
+        if (question.type === 'MultipleChoice' || question.type === 'TrueFalse') {
+          const opts = [...body.querySelectorAll('.quiz-opt')];
+          if (opts[question.correctIndex]) opts[question.correctIndex].click();
+        } else if (question.type === 'Ordering') {
+          // reorder the list into the correct order
+          const want = question.correctOrder || question.answers.map((_, k) => k);
+          const items = [...body.querySelectorAll('.qo-item')];
+          for (let pos = 0; pos < want.length; pos++) {
+            const cur = items[pos];
+            const txt = cur.textContent;
+            const wantIdx = want[pos];
+            const target = question.answers[wantIdx];
+            if (txt.includes(target.slice(0, 18))) continue;
+            const j = items.findIndex((el) => el.textContent.includes(target.slice(0, 18)));
+            if (j > pos) {
+              for (let k = j; k > pos; k--) {
+                items[k].querySelector('[data-a="up"]').click();
+                await sleep(20);
+              }
+            }
+          }
+        } else if (question.type === 'Matching') {
+          const cols = [...body.querySelectorAll('.match-col')];
+          const keys = [...cols[0].querySelectorAll('.match-chip')];
+          const vals = [...cols[1].querySelectorAll('.match-chip')];
+          for (let k = 0; k < keys.length; k++) {
+            keys[k].click();
+            const wantRight = question.pairs[k].right;
+            const v = vals.find((el) => el.textContent.trim() === wantRight);
+            if (v) v.click();
+            await sleep(20);
+          }
+        }
+        await sleep(80);
+        const next = document.getElementById('quizNext');
+        if (!next.disabled) next.click();
+        await sleep(140);
+      }
+      return { resultVisible: !!document.querySelector('.quiz-result') };
+    });
+    console.log('quiz completion:', JSON.stringify(answeredAll));
+    ok(answeredAll.resultVisible, 'final quiz reaches the results screen');
+    await wait(400);
+    await shot('19-quiz-results');
+    await page.evaluate(() => { const b = document.getElementById('quizNext'); if (!b.disabled) b.click(); });
+    await wait(1200);
+  }
+
+  // --- finish the mission chain and show the certificate ---
+  await page.evaluate(() => {
+    const d = window.__dhjDebug;
+    const s = d.getState();
+    // complete the remaining mission events directly through the mission system
+    const m = d.missions;
+    m.onEvent('exhibit', { id: 'q_el_birth', zone: 'early_life' });
+    m.onEvent('exhibit', { id: 'q_el_school', zone: 'early_life' });
+    m.onEvent('quiz', { quizId: 'quiz_social_reform' });
+    m.onEvent('quiz', { quizId: 'quiz_constitution' });
+    m.onEvent('archive', { q: 'constitution' });
+    m.onEvent('memorial', { id: 'mem_chaitya' });
+    m.onEvent('memorial', { id: 'mem_deekshabhoomi' });
+    m.onEvent('ai', { q: 'rights' });
+    m.onEvent('quiz', { quizId: 'quiz_final' });
+  });
+  await wait(1500);
+  const certVisible = await page.evaluate(() => !document.getElementById('certScreen').classList.contains('hidden'));
+  console.log('certificate visible:', certVisible);
+  await shot('20-certificate');
+
+  // --- settings screen ---
+  await page.evaluate(() => {
+    document.getElementById('certScreen').classList.add('hidden');
+    document.getElementById('settingsScreen').classList.remove('hidden');
+  });
+  await wait(400);
+  await shot('21-settings');
+
+  // --- mobile viewport check ---
+  await page.setViewport({ width: 844, height: 390, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  await page.evaluate(() => {
+    ['settingsScreen', 'certScreen', 'pauseScreen', 'mapScreen', 'quizPanel', 'exhibitPanel'].forEach((id) => document.getElementById(id).classList.add('hidden'));
+  });
+  await wait(900);
+  await shot('22-mobile');
+  await page.setViewport({ width: 1280, height: 720 });
 
   // summary
   const st = await page.evaluate(() => {
@@ -215,7 +338,9 @@ try {
 
 console.log('\n=== ERRORS (' + errors.length + ') ===');
 for (const e of [...new Set(errors)].slice(0, 30)) console.log(' •', e);
+if (failCount) console.log('\n=== FAILED CHECKS: ' + failCount + ' ===');
+for (const f of failedChecks) console.log(' x', f);
 
 await browser.close();
 server.close();
-process.exit(errors.length ? 1 : 0);
+process.exit(errors.length || failCount ? 1 : 0);

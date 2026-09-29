@@ -154,6 +154,16 @@ export function createCharacter({ reducedFx = false } = {}) {
   // cast shadows
   root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
 
+  // soft contact shadow (blob) — keeps the character grounded even where the
+  // real shadow map is disabled on low-end devices
+  const blob = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.15, 1.15),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }));
+  blob.rotation.x = -Math.PI / 2;
+  blob.position.y = 0.015;
+  blob.renderOrder = -1;
+  root.add(blob);
+
   // ---------------- animation state ----------------
   const st = { speed: 0, turn: 0, phase: Math.random() * 6, talk: 0, waveT: 0, lookYaw: 0, lookPitch: 0 };
 
@@ -229,5 +239,5 @@ export function createCharacter({ reducedFx = false } = {}) {
   function playTalk(sec = 2) { st.talk = sec; }
   function setStrideSoundPhase() { return st.phase % 1; }
 
-  return { root, body, headG, update, playTalk, st, hips, spine, armR, armL, legL, legR };
+  return { root, body, headG, update, playTalk, st, hips, spine, armR, armL, legL, legR, blob };
 }

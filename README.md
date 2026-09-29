@@ -85,3 +85,31 @@ Tools/AssetGen/ deterministic art & audio generators (Python + numpy)
 - **Respectful reconstruction**: the character, the portrait, and the six memorial
   dioramas are labelled *Artistic visualization / Digital reconstruction* in-scene.
 - No ads, no monetization, no violence. Content is factual, sourced, dignified.
+
+---
+
+## Web / Windows / Android build (`WebGame/`)
+
+A second, self-contained shipping target lives in `WebGame/`: the same museum,
+content and progression, written once in ES modules and bundled by esbuild into
+a folder that runs offline in a browser, inside an **Electron shell (Windows
+x64 `.exe`)** and inside a **WebView shell (signed Android `.apk`)**.
+
+| Deliverable | How it is produced |
+|---|---|
+| Playable web build | `WebGame/` → `npm run build` → `dist/game` (also `node scripts/serve.mjs 4173`) |
+| Windows x64 EXE | `WebGame/electron` → `electron-builder --win` → installer + portable `.exe` |
+| Android APK | `WebGame/android` → `./gradlew assembleRelease` → signed `.apk` |
+| Automated QA | `WebGame/scripts/qa.mjs` (headless Chromium play-through + screenshots) |
+| Content validation | `WebGame/scripts/validate.mjs` (same checks as *DHJ → 4 · Validate Project*) |
+| Headless world test | `WebGame/scripts/nodesmoke.mjs` (builds hub + 6 galleries, 8-mission chain) |
+
+It reuses this repository's own data and assets — `archive_items.json`,
+`exhibits.json`, `missions.json`, `quizzes.json`, the `en/hi/ta` localization,
+`Assets/Art` textures/portrait/manuscripts and `Assets/Audio` — so there is a
+single source of truth for the museum's content. The JSON is baked into
+`content-bundle.js` at build time because the desktop and mobile shells load
+the game from `file://`.
+
+See [`WebGame/README.md`](WebGame/README.md) for details and
+[`Documentation/BuildAndDemo.md`](Documentation/BuildAndDemo.md) for the demo script.

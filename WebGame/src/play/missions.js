@@ -21,7 +21,7 @@ export function createMissions(ctx) {
     switch (m.type) {
       case 'Interact': return done(m.id) ? 'Complete' : 'Objective: ' + m.objective;
       case 'DiscoverExhibits': {
-        const n = Object.keys(st.discovered).length;
+        const n = exhibitsFoundFor(m);
         return `Exhibits opened: ${Math.min(n, 2)}/2 · ${m.objective}`;
       }
       case 'CompleteQuiz': {
@@ -38,6 +38,18 @@ export function createMissions(ctx) {
       case 'AskAssistant': return st.aiAsked ? 'Complete' : m.objective;
       default: return m.objective;
     }
+  }
+
+  // which gallery a "discover" mission is about (m2 -> early life, …)
+  const MISSION_ZONE = {
+    m2_earlylife: 'early_life', m3_reform: 'social_reform', m4_constitution: 'constitution',
+    m5_archive: 'scholarship', m6_memorials: 'memorials', m7_legacy: 'legacy',
+  };
+  function zoneOf(m) { return MISSION_ZONE[m.id] || null; }
+  function exhibitsFoundFor(m) {
+    const z = zoneOf(m);
+    if (!z) return Object.values(st.discovered).reduce((a, o) => a + Object.keys(o).length, 0);
+    return Object.keys(st.discovered[z] || {}).length;
   }
 
   function quizForMission(m) {
@@ -85,9 +97,8 @@ export function createMissions(ctx) {
         if (type === 'exhibit') {
           st.discovered[data.zone] = st.discovered[data.zone] || {};
           st.discovered[data.zone][data.id] = true;
-          const total = Object.values(st.discovered).reduce((a, o) => a + Object.keys(o).length, 0);
-          st.stats.exhibits = total;
-          if (total >= 2) hit = true;
+          st.stats.exhibits = Object.values(st.discovered).reduce((a, o) => a + Object.keys(o).length, 0);
+          if (exhibitsFoundFor(m) >= 2) hit = true;
         }
         break;
       case 'CompleteQuiz':

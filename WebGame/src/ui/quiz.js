@@ -9,6 +9,7 @@ export function createQuiz(ctx) {
   const scr = $('quizPanel');
   const body = $('quizBody'), nextBtn = $('quizNext'), scoreEl = $('quizScore');
   let quiz = null, qi = 0, answered = false, correctCount = 0, sel = null;
+  let finished = false, emitted = false;
   let onClose = null;
 
   $('quizClose').addEventListener('click', () => { if (!quiz) return close(); });
@@ -19,6 +20,7 @@ export function createQuiz(ctx) {
     if (!quiz) { console.warn('missing quiz', quizId); return; }
     onClose = doneCb;
     qi = 0; correctCount = 0; answered = false; sel = null;
+    finished = false; emitted = false;
     $('quizTitle').textContent = quiz.title;
     $('quizKicker').textContent = 'KNOWLEDGE CHECKPOINT';
     $('quizIntro').textContent = quiz.intro || '';
@@ -176,6 +178,7 @@ export function createQuiz(ctx) {
   }
 
   function onNext() {
+    if (finished) { close(true); return; }
     const q = quiz.questions[qi];
     if (!answered) {
       // ---- evaluate ----
@@ -248,30 +251,34 @@ export function createQuiz(ctx) {
     scoreEl.textContent = 'Checkpoint complete';
     nextBtn.textContent = 'Close';
     answered = true;
+    finished = true;
     nextBtn.disabled = false;
-    nextBtn.onclick = () => {
-      close(true);
-      ctx.events.emit('quizDone', { quizId: quiz.id, score: correctCount, total });
-    };
+    emitDone();
     ctx.hud.xpToast(`+${xp} Knowledge Points`);
     if (correctCount >= total * 0.6) ctx.hud.achieToast('Checkpoint cleared — ' + quiz.title, '🎓');
     ctx.missions.onEvent('quiz', { quizId: quiz.id, score: correctCount, total });
     saveGame();
   }
 
+  function emitDone() {
+    if (emitted || !quiz) return;
+    emitted = true;
+    ctx.events.emit('quizDone', { quizId: quiz.id, score: correctCount, total: quiz.questions.length });
+  }
+
   function close(fired = false) {
+    if (finished) emitDone();
     hide(scr);
     const cb = onClose;
     quiz = null;
-    nextBtn.onclick = onNext;
+    finished = false;
     if (cb) cb(fired);
   }
 
   function isOpen() { return !scr.classList.contains('hidden'); }
-  function requestClose() { // ESC / X → confirm quit
+  function requestClose() { // ESC / X closes the checkpoint
     if (!quiz) return false;
-    if (answered && qi >= quiz.questions.length) { close(true); return true; }
-    close(false);
+    close(finished);
     return true;
   }
 

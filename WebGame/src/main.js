@@ -6,6 +6,7 @@ import * as audio from './audio.js';
 import { loadContent, zoneMeta, doorOrder } from './content.js';
 import { createGuide } from './ai.js';
 import { createWorld } from './world/world.js';
+import { createPostFX } from './world/postfx.js';
 import { createCharacter } from './world/character.js';
 import { createPlayer } from './play/player.js';
 import { createMissions } from './play/missions.js';
@@ -97,14 +98,18 @@ async function boot() {
     return document.querySelectorAll('.overlay:not(.hidden)').length > 0;
   }
 
-  // environment reflections
+  // environment reflections (PBR ambient) + cinematic grade
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.06).texture;
+  scene.environmentIntensity = 0.55;
 
   // world + character
   const world = createWorld(scene, ctx);
   ctx.world = world;
   await world.init();
+
+  const post = createPostFX(renderer, scene, camera, quality);
+  ctx.post = post;
 
   step(60, 'Building the rotunda…');
   await world.enter('hub');
@@ -527,6 +532,7 @@ async function boot() {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
+    if (post) post.setSize(innerWidth, innerHeight);
   });
 
   // ---------------- menu orbit camera ----------------
@@ -574,7 +580,7 @@ async function boot() {
       scanInteractables();
     }
 
-    renderer.render(scene, camera);
+    if (post) post.render(dt); else renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
 
@@ -594,7 +600,7 @@ async function boot() {
   step(100, 'Ready');
 
 
-  window.__dhjDebug = { scene, camera, renderer, ctx, world, player, missions, getState, travelTo };
+  window.__dhjDebug = { scene, camera, renderer, post, ctx, world, player, missions, getState, travelTo, settings };
   loop();
 
   // ---------------- Android hardware back button ----------------
