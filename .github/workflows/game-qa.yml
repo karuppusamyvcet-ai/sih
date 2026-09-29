@@ -89,6 +89,25 @@ jobs:
           echo "QA passed ✅"
 
 
+      - name: Report failure detail
+        if: failure()
+        shell: bash
+        run: |
+          emit() {
+            title="$1"; file="$2"
+            if [ -f "$file" ]; then
+              msg="$(tail -c 6000 "$file" | tr -d '\000' | sed 's/%/%%/g')"
+            else
+              msg="(no log file: $file)"
+            fi
+            echo "::error title=$title::$(echo "$msg" | tr '\n' ' ' | cut -c1-6000)"
+          }
+          emit "electron-builder" WebGame/electron/eb.log
+          emit "gradle" WebGame/android/gradle.log
+          emit "qa play-through" WebGame/qa.log
+          emit "validate" WebGame/validate.log
+          emit "nodesmoke" WebGame/nodesmoke.log
+
       - name: Publish diagnostics (git branch)
         if: always()
         env:
