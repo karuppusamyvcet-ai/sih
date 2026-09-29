@@ -113,6 +113,7 @@ jobs:
         if: always()
         env:
           GH: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set +e
@@ -146,6 +147,7 @@ jobs:
         shell: bash
         env:
           GH: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set +e
           STAGE=/tmp/art-$(date +%s)
