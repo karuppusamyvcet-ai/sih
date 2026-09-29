@@ -51,6 +51,33 @@ export async function loadTextures(quality) {
   loadTex('ms3', 'art/Images/manuscript_placeholder_3.png', { repeat: [1, 1], aniso });
 }
 
+/**
+ * Lazily load the digitised page that belongs to an archive record.
+ * `media` is the record's media object ("Art/Documents/const_preamble",
+ * "Art/Images/book_spines", "Diorama/MhowHouse"). Returns null for 3-D media
+ * or anything we have no texture for, so callers can fall back.
+ */
+const mediaCache = new Map();
+export function mediaTexture(media) {
+  if (!media) return null;
+  const ref = media.ref || (media.certificate || '');
+  if (!ref) return null;
+  let url = null;
+  if (/^Art\/Documents\//i.test(ref)) {
+    url = 'art/Documents/thumbs/' + ref.split('/').pop() + '.jpg';
+  } else if (/^Art\/Images\//i.test(ref)) {
+    url = 'art/Images/' + ref.split('/').pop() + '.png';
+  }
+  if (!url) return null;
+  if (mediaCache.has(url)) return mediaCache.get(url);
+  const t = loader.load(url);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  mediaCache.set(url, t);
+  return t;
+}
+
 export function buildMaterials() {
   const std = (o) => new THREE.MeshStandardMaterial(o);
 

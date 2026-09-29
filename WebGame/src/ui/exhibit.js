@@ -74,10 +74,14 @@ export function createExhibitUI(ctx) {
         </div>
         <div class="src">Source: ${escapeHtml(a.source || '—')}</div>
         <div class="src">Record id: ${escapeHtml(a.id)}</div>`;
-      const media = a.media && a.media.ref;
-      const url = media ? media.replace('Art/Images/', 'art/Images/') + (media.endsWith('.png') ? '' : '.png') : null;
+      const media = a.media || {};
+      const url = resolveMedia(media);
       img.src = url || pickManuscript(entry.id);
-      $('exImgLabel').textContent = (a.media && a.media.label) || 'Manuscript facsimile — artistic visualization';
+      $('exImgLabel').textContent = media.label
+        || (url ? 'Archival document' : 'Manuscript facsimile — artistic visualization');
+      if (media.source_note) {
+        body.insertAdjacentHTML('beforeend', `<div class="src">${escapeHtml(media.source_note)}</div>`);
+      }
     } else {
       body.innerHTML = `<p>${escapeHtml(entry.text || 'This exhibit forms part of the museum collection. Open the archive terminal for the full catalogue record.')}
         </p><div class="src">Digital Ambedkar Heritage Museum</div>`;
@@ -114,6 +118,20 @@ export function createExhibitUI(ctx) {
   function pickManuscript(seed = '') {
     let n = 0; for (const c of seed) n += c.charCodeAt(0);
     return `art/Images/manuscript_placeholder_${(n % 3) + 1}.png`;
+  }
+
+  // Archive media refs are written the way the content files spell them
+  // ("Art/Documents/const_preamble"); map them to the shipped asset folder.
+  const MEDIA_EXT = { 'art/documents/': '.jpg', 'art/images/': '.png' };
+  function resolveMedia(media) {
+    // a monument record shows its commemorative certificate; the diorama is
+    // the 3-D model standing next to the panel
+    const ref = media && (media.type === 'Model3D' ? media.certificate : media.ref);
+    if (!ref) return null;
+    const path = ref.replace(/^Art\//i, 'art/').toLowerCase();
+    const dir = Object.keys(MEDIA_EXT).find((d) => path.startsWith(d));
+    if (!dir) return null;
+    return ref.replace(/^Art\//i, 'art/') + MEDIA_EXT[dir];
   }
 
   function close() {

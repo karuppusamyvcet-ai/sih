@@ -114,6 +114,32 @@ for (const [q, want] of probes) {
 const none = guide.answer('zzzqqq xyzzy nonsense token');
 ok(none.hits.length === 0 || none.hits[0].score < 0.12, 'nonsense query does not hallucinate a confident hit');
 
+console.log('== archive media resolves to a real file ==');
+// Mirrors resolveMedia() in src/ui/exhibit.js and mediaTexture() in world/materials.js
+let mediaBad = 0, mediaCount = 0, mediaNoFile = 0;
+const byId = new Map(archive.items.map((i) => [i.id, i]));
+const seenExhibits = new Set();
+for (const z of exhibits.zones) {
+  for (const e of z.exhibits) {
+    if (!e.archiveId || seenExhibits.has(e.archiveId)) continue;
+    seenExhibits.add(e.archiveId);
+    const rec = byId.get(e.archiveId);
+    const m = rec && rec.media;
+    if (!m || !m.ref) { mediaNoFile++; console.log(`   · ${e.archiveId} has no media`); continue; }
+    let path = null;
+    if (/^Art\/Documents\//i.test(m.ref)) path = `Assets/${m.ref.replace(/^Art\//i, 'Art/')}.jpg`;
+    else if (/^Art\/Images\//i.test(m.ref)) path = `Assets/${m.ref}.png`;
+    else { mediaCount++; continue; }                       // Diorama/* is 3-D, no file
+    mediaCount++;
+    if (!existsSync(join(repo, path))) { mediaBad++; console.log(`   · ${e.archiveId} -> missing ${path}`); }
+    else if (/^Art\/Documents\//i.test(m.ref) && !existsSync(join(repo, `Assets/Art/Documents/thumbs/${m.ref.split('/').pop()}.jpg`))) {
+      mediaBad++; console.log(`   · ${e.archiveId} -> missing panel thumbnail`);
+    }
+  }
+}
+ok(mediaBad === 0, `every exhibit page resolves to a shipped file (${mediaCount} checked)`);
+ok(mediaNoFile === 0, `every exhibit record has media (${seenExhibits.size} records used by exhibits)`);
+
 console.log('== assets present ==');
 for (const p of ['Assets/Art/Images/portrait_ambedkar_art.png', 'Assets/Art/Textures/marble_cream.png', 'Assets/Art/Textures/floor_medallion.png', 'Assets/Audio/Music/museum_theme_loop.wav', 'Assets/Audio/Ambience/hall_ambience_loop.wav', 'Assets/Audio/SFX/quiz_correct.wav']) {
   ok(existsSync(join(repo, p)), p);

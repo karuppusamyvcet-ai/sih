@@ -189,7 +189,7 @@ export function wallPanel({ title = '', w = 2.2, h = 1.4, tex = null, accent = 0
   return g;
 }
 
-export function displayCase({ title = '', w = 1.7, h = 1.05, d = 0.85, accent = 0xd9b45b, item = 'book' } = {}) {
+export function displayCase({ title = '', w = 1.7, h = 1.05, d = 0.85, accent = 0xd9b45b, item = 'book', pageTex = null } = {}) {
   const g = new THREE.Group();
   // wooden base
   g.add(box(w, 0.62, d, M.woodWarm, 0, 0.31, 0));
@@ -212,6 +212,8 @@ export function displayCase({ title = '', w = 1.7, h = 1.05, d = 0.85, accent = 
   it.position.y = 0.72;
   g.add(it);
   g.userData.artifact = it;
+  // the document itself, raked on a stand beside the object
+  if (pageTex) g.add(documentStand(pageTex, accent, w, d, h));
   // label
   if (title) {
     const tex = plaqueTexture(title, '', { w: 512, h: 128 });
@@ -220,6 +222,28 @@ export function displayCase({ title = '', w = 1.7, h = 1.05, d = 0.85, accent = 
     pl.position.set(0, 0.4, d / 2 + 0.015);
     g.add(pl);
   }
+  return g;
+}
+
+/**
+ * A digitised archive page lying open on a raked stand — the way a document
+ * is actually shown in a case. Used inside display cases and on pedestals.
+ */
+export function documentStand(tex, accent = 0xd9b45b, w = 1.7, d = 0.85, h = 1.05) {
+  const g = new THREE.Group();
+  const pw = Math.min(w - 0.34, 0.62), ph = pw * 1.414;   // A-series page
+  const board = box(pw + 0.05, ph + 0.05, 0.02, M.brass, 0, 0, 0);
+  const page = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph),
+    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.72, metalness: 0.0 }));
+  page.position.z = 0.012;
+  const inner = new THREE.Group();
+  inner.add(board, page);
+  inner.rotation.x = -0.62;                     // raked towards the visitor
+  inner.position.set(w * 0.26, 0.70 + ph * 0.33, d * 0.16);
+  g.add(inner);
+  // little support wedge
+  g.add(box(pw + 0.05, 0.03, 0.16, M.woodDark, w * 0.26, 0.70, d * 0.16 - 0.06));
+  g.userData.page = page;
   return g;
 }
 

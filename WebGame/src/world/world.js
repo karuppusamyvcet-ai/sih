@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { M, TEX, screenMat, holoMat, loadTextures, buildMaterials } from './materials.js';
+import { M, TEX, screenMat, holoMat, loadTextures, buildMaterials, mediaTexture } from './materials.js';
 import * as P from './props.js';
 import { zoneMeta, doorOrder } from '../content.js';
 import { rand, damp } from '../core.js';
@@ -575,14 +575,14 @@ export function createWorld(scene, ctx) {
       const titleShort = e.title.length > 30 ? e.title.slice(0, 28) + '…' : e.title;
       if (e.kind === 'WallPanel') {
         // snap flush to the wall this slot faces
-        prop = P.wallPanel({ title: titleShort, w: 2.4, h: 1.5, accent, tex: zoneTex(zoneId, e.id) });
+        prop = P.wallPanel({ title: titleShort, w: 2.4, h: 1.5, accent, tex: zoneTex(zoneId, e.id, e) });
         if (s.ry === Math.PI / 2) prop.position.set(-W / 2 + 0.16, 3.1, s.z);
         else if (s.ry === -Math.PI / 2) prop.position.set(W / 2 - 0.16, 3.1, s.z);
         else if (s.ry === 0) prop.position.set(s.x, 3.1, -D / 2 + 0.16);
         else prop.position.set(s.x, 3.1, D / 2 - 0.16);
         prop.rotation.y = s.ry;
       } else if (e.kind === 'DisplayCase') {
-        prop = P.displayCase({ title: titleShort, accent, item: artifactFor(e.id) });
+        prop = P.displayCase({ title: titleShort, accent, item: artifactFor(e.id), pageTex: pageTexFor(e) });
         prop.position.set(s.x, 0, s.z);
         prop.rotation.y = s.ry;
       } else if (e.kind === 'QuizKiosk') {
@@ -728,12 +728,21 @@ export function createWorld(scene, ctx) {
         default: return 'exhibit';
       }
     }
-    function zoneTex(zid, eid) {
+    // every panel and case shows the record's own digitised page; the
+    // manuscript placeholders are only a fallback for media we cannot draw
+    function zoneTex(zid, eid, exhibit) {
+      const rec = exhibit && exhibit.archiveId ? ctx.content.byId.get(exhibit.archiveId) : null;
+      const t = rec && mediaTexture(rec.media);
+      if (t) return t;
       if (zid === 'scholarship' || zid === 'legacy') return TEX.spines;
       if (zid === 'constitution') return TEX.ms3;
       if (eid.startsWith('el_')) return TEX.ms1;
       if (eid.startsWith('sr_')) return TEX.ms2;
       return TEX.portrait;
+    }
+    function pageTexFor(e) {
+      const rec = e && e.archiveId ? ctx.content.byId.get(e.archiveId) : null;
+      return rec ? mediaTexture(rec.media) : null;
     }
     function artifactFor(eid) {
       const map = ['urn', 'book', 'globe', 'scroll', 'lamp', 'diamond'];
