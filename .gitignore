@@ -42,3 +42,8 @@ crashlytics-build.properties
 # OS
 .DS_Store
 Thumbs.db
+
+# packaged web build served from the preview
+/AmbedkarDigitalHeritage-web.zip
+/WebGame/dist/
+/WebGame/release/
