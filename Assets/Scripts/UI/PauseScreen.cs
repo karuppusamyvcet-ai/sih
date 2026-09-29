@@ -32,7 +32,12 @@ namespace DHJ.UI
                 () => { ui.Pop(this); G.ResumeFromPause(); },
                 () => { Time.timeScale = 1f; ui.ShowArchive(); },
                 () => { Time.timeScale = 1f; ui.ShowMap(); },
-                () => { G.Quests.Current != null ? ui.Toast(G.Quests.Current.brief) : ui.Toast(L.T("certificate.subtitle")); Time.timeScale = 1f; },
+                () =>
+                {
+                    if (G.Quests.Current != null) ui.Toast(G.Quests.Current.brief);
+                    else ui.Toast(L.T("certificate.subtitle"));
+                    Time.timeScale = 1f;
+                },
                 () => ui.ShowSettings(),
                 () => RestartCheckpoint(),
                 () => { Time.timeScale = 1f; G.QuitToMainMenu(); }
@@ -54,9 +59,9 @@ namespace DHJ.UI
         {
             // museum is hub-centric: returning to spawn is the checkpoint reset
             Time.timeScale = 1f;
-            var spawn = GameObject.Find("PlayerSpawn");
+            var spawn = Object.FindObjectOfType<PlayerSpawn>();
             var pc = Object.FindObjectOfType<Player.PlayerController>();
-            if (pc != null && spawn != null) pc.Teleport(spawn.transform.position, spawn.transform.eulerAngles.y);
+            if (pc != null && spawn != null) pc.Teleport(spawn.transform.position, spawn.yaw);
             ui.Pop(this);
             G.ResumeFromPause();
         }

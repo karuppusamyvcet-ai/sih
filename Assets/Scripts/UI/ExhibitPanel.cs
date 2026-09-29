@@ -121,7 +121,7 @@ namespace DHJ.UI
 
         private void BuildImage(RectTransform holder, ArchiveItemDto item)
         {
-            var sprite = AssetLibrary.I.ImageFor(item.media.@ref);
+            var sprite = ContentLoader.LoadSprite(item.media.@ref);
             var zone = UIFactory.Rt(holder.gameObject, "img", new Vector2(0.04f, 0.18f), new Vector2(0.96f, 0.92f),
                                     Vector2.zero, Vector2.zero);
             if (sprite != null)
@@ -132,34 +132,37 @@ namespace DHJ.UI
             else Placeholder(zone, G.Localization.T("media.placeholder.image"), null);
 
             if (!string.IsNullOrEmpty(item.media.label))
-                UIFactory.TextAt(holder.gameObject, "cap", item.media.label, UITheme.Tiny, UITheme.Wrong,
+                UIFactory.TextAt(holder.gameObject, "cap", item.media.label, UITheme.Tiny, UITheme.Gold,
                     new Vector2(0.04f, 0.02f), new Vector2(0.96f, 0.16f), TextAlignmentOptions.Center, FontStyles.Italic);
         }
 
         private void BuildDocument(RectTransform holder, ArchiveItemDto item)
         {
-            // choose page sprites deterministically from the placeholder set
+            // choose page sprites deterministically from the placeholder set + StreamingAssets override
             var pages = new List<Sprite>();
-            var baseSprite = AssetLibrary.I.ImageFor(item.media.@ref);
+            var baseSprite = ContentLoader.LoadSprite(item.media.@ref);
             if (baseSprite != null) pages.Add(baseSprite);
             if (AssetLibrary.I.manuscript1 != null && !pages.Contains(AssetLibrary.I.manuscript1)) pages.Add(AssetLibrary.I.manuscript1);
-            if (AssetLibrary.I.manuscript2 != null) pages.Add(AssetLibrary.I.manuscript2);
-            if (AssetLibrary.I.manuscript3 != null) pages.Add(AssetLibrary.I.manuscript3);
+            if (AssetLibrary.I.manuscript2 != null && !pages.Contains(AssetLibrary.I.manuscript2)) pages.Add(AssetLibrary.I.manuscript2);
+            if (AssetLibrary.I.manuscript3 != null && !pages.Contains(AssetLibrary.I.manuscript3)) pages.Add(AssetLibrary.I.manuscript3);
 
             int page = 0;
-            var zone = UIFactory.Rt(holder.gameObject, "doc", new Vector2(0.06f, 0.22f), new Vector2(0.94f, 0.94f),
+            float zoom = 1.0f;
+            var zone = UIFactory.Rt(holder.gameObject, "doc", new Vector2(0.04f, 0.22f), new Vector2(0.96f, 0.94f),
                                     Vector2.zero, Vector2.zero);
+            zone.gameObject.AddComponent<RectMask2D>();
             var img = UIFactory.Img(zone.gameObject, "page", null, Color.white);
             img.preserveAspect = true;
 
             var pageLabel = UIFactory.TextAt(holder.gameObject, "page", "", UITheme.Small, UITheme.Cream,
-                new Vector2(0.3f, 0.04f), new Vector2(0.7f, 0.14f), TextAlignmentOptions.Center);
+                new Vector2(0.24f, 0.04f), new Vector2(0.56f, 0.14f), TextAlignmentOptions.Center);
 
             Image imgRef = img;
             void Render()
             {
                 if (page >= 0 && page < pages.Count) imgRef.sprite = pages[page];
-                pageLabel.text = $"{G.Localization.T("media.document.page")} {page + 1} {G.Localization.T("media.document.of")} {pages.Count}";
+                imgRef.rectTransform.localScale = Vector3.one * zoom;
+                pageLabel.text = $"{G.Localization.T("media.document.page")} {page + 1}/{pages.Count}  ({Mathf.RoundToInt(zoom * 100)}%)";
             }
             Render();
 
@@ -168,19 +171,32 @@ namespace DHJ.UI
                 UITheme.PanelSoft, UITheme.Body);
             AnchorFull((RectTransform)prev.transform);
             ((RectTransform)prev.transform).anchorMin = new Vector2(0.04f, 0.04f);
-            ((RectTransform)prev.transform).anchorMax = new Vector2(0.24f, 0.14f);
+            ((RectTransform)prev.transform).anchorMax = new Vector2(0.18f, 0.14f);
             ((RectTransform)prev.transform).offsetMin = Vector2.zero; ((RectTransform)prev.transform).offsetMax = Vector2.zero;
 
             var next = UIFactory.Button(holder.gameObject, "▶", () =>
                 { if (page < pages.Count - 1) { page++; G.Audio.PlaySfx(AudioSys.SfxId.PageTurn); Render(); } },
                 UITheme.PanelSoft, UITheme.Body);
             var nrt = (RectTransform)next.transform;
-            nrt.anchorMin = new Vector2(0.76f, 0.04f); nrt.anchorMax = new Vector2(0.96f, 0.14f);
+            nrt.anchorMin = new Vector2(0.82f, 0.04f); nrt.anchorMax = new Vector2(0.96f, 0.14f);
             nrt.offsetMin = Vector2.zero; nrt.offsetMax = Vector2.zero;
+
+            // Interactive zoom controls (− / +)
+            var zoomOut = UIFactory.Button(holder.gameObject, "−", () =>
+                { zoom = Mathf.Clamp(zoom - 0.25f, 1.0f, 1.85f); Render(); }, UITheme.PanelSoft, UITheme.Body);
+            var zort = (RectTransform)zoomOut.transform;
+            zort.anchorMin = new Vector2(0.58f, 0.04f); zort.anchorMax = new Vector2(0.68f, 0.14f);
+            zort.offsetMin = Vector2.zero; zort.offsetMax = Vector2.zero;
+
+            var zoomIn = UIFactory.Button(holder.gameObject, "+", () =>
+                { zoom = Mathf.Clamp(zoom + 0.25f, 1.0f, 1.85f); Render(); }, UITheme.PanelSoft, UITheme.Body);
+            var zirt = (RectTransform)zoomIn.transform;
+            zirt.anchorMin = new Vector2(0.70f, 0.04f); zirt.anchorMax = new Vector2(0.80f, 0.14f);
+            zirt.offsetMin = Vector2.zero; zirt.offsetMax = Vector2.zero;
 
             if (!string.IsNullOrEmpty(item.media.label))
                 UIFactory.TextAt(holder.gameObject, "cap", item.media.label, UITheme.Tiny, UITheme.Subtle,
-                    new Vector2(0.3f, 0.14f), new Vector2(0.7f, 0.22f), TextAlignmentOptions.Center, FontStyles.Italic);
+                    new Vector2(0.15f, 0.14f), new Vector2(0.85f, 0.22f), TextAlignmentOptions.Center, FontStyles.Italic);
         }
 
         private void BuildAudio(RectTransform holder, ArchiveItemDto item)

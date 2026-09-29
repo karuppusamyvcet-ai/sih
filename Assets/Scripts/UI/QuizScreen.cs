@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using DHJ.Core;
 using DHJ.Data;
+using DHJ.Quiz;
 
 namespace DHJ.UI
 {

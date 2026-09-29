@@ -22,6 +22,15 @@ namespace DHJ.Interaction
         public abstract void Interact(GameObject player);
 
         protected static Animator Anim(GameObject player) => player.GetComponentInChildren<Animator>();
+
+        protected void OrientAndExpress(GameObject player, int animTrigger,
+            CharacterRealismDriver.ExpressionState expression = CharacterRealismDriver.ExpressionState.Attentive)
+        {
+            if (player == null) return;
+            player.GetComponent<PlayerController>()?.FaceTowards(transform.position);
+            player.GetComponent<CharacterRealismDriver>()?.TriggerExpression(expression, 4.0f);
+            CharacterAnimatorDriver.Trigger(Anim(player), animTrigger);
+        }
     }
 
     /// <summary>
@@ -37,15 +46,15 @@ namespace DHJ.Interaction
 
         public override string Prompt => kind switch
         {
-            ExhibitKind.QuizKiosk        => "Take the Challenge",
-            ExhibitKind.ArchiveTerminal  => "Use the Archive Terminal",
-            ExhibitKind.AIConsole        => "Ask the Archive Guide",
-            ExhibitKind.BookDesk         => "Open the Book",
+            ExhibitKind.QuizKiosk         => "Take the Challenge",
+            ExhibitKind.ArchiveTerminal   => "Use the Archive Terminal",
+            ExhibitKind.AIConsole         => "Ask the Archive Guide",
+            ExhibitKind.BookDesk          => "Open the Book",
             ExhibitKind.ConstitutionTable => "Read the Preamble",
-            ExhibitKind.MonumentDiorama  => "View the Memorial",
-            ExhibitKind.GuideKiosk       => "Talk to the Archive Guide",
-            ExhibitKind.DisplayCase      => "Examine the Display",
-            _                            => "Examine"
+            ExhibitKind.MonumentDiorama   => "View the Memorial",
+            ExhibitKind.GuideKiosk        => "Talk to the Archive Guide",
+            ExhibitKind.DisplayCase       => "Examine the Display",
+            _                             => "Examine"
         };
 
         public override void Interact(GameObject player)
@@ -53,10 +62,16 @@ namespace DHJ.Interaction
             if (GameManager.I.State != GameState.Playing) return;
             GameManager.I.Audio.PlaySfx(AudioSys.SfxId.ExhibitOpen, transform.position);
 
-            CharacterAnimatorDriver.Trigger(Anim(player),
-                kind == ExhibitKind.BookDesk || kind == ExhibitKind.ConstitutionTable
-                    ? CharacterAnimatorDriver.Read
-                    : CharacterAnimatorDriver.Examine);
+            bool isReading = kind == ExhibitKind.BookDesk || kind == ExhibitKind.ConstitutionTable;
+            bool isGuide   = kind == ExhibitKind.AIConsole || kind == ExhibitKind.GuideKiosk;
+
+            OrientAndExpress(player,
+                isReading ? CharacterAnimatorDriver.Read :
+                isGuide   ? CharacterAnimatorDriver.Talk :
+                            CharacterAnimatorDriver.Examine,
+                isReading ? CharacterRealismDriver.ExpressionState.Reading :
+                isGuide   ? CharacterRealismDriver.ExpressionState.Speaking :
+                            CharacterRealismDriver.ExpressionState.Attentive);
 
             if (!string.IsNullOrEmpty(exhibitId))
             {
@@ -90,7 +105,7 @@ namespace DHJ.Interaction
         public float bobAmplitude = 0.08f, spinSpeed = 40f;
         private Vector3 _start;
 
-        public override string Prompt => "Collect";
+        public override string Prompt => "Collect Archival Record";
 
         private void Start()
         {
@@ -115,7 +130,7 @@ namespace DHJ.Interaction
             {
                 UI.UIManager.instance?.Toast(LocalizationMessage("toast.collected"));
             }
-            CharacterAnimatorDriver.Trigger(Anim(player), CharacterAnimatorDriver.Interact);
+            OrientAndExpress(player, CharacterAnimatorDriver.Interact, CharacterRealismDriver.ExpressionState.Respectful);
             gameObject.SetActive(false);
         }
 

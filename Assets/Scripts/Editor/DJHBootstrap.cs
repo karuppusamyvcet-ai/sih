@@ -2,6 +2,7 @@ using System.IO;
 using UnityEngine;
 using UnityEditor;
 using TMPro;
+using DHJ.Data;
 
 namespace DHJ.EditorTools
 {
@@ -123,6 +124,7 @@ namespace DHJ.EditorTools
         {
             PlayerSettings.companyName = "SIH26096 Team";
             PlayerSettings.productName = "Ambedkar: The Digital Heritage Journey";
+            PlayerSettings.colorSpace = ColorSpace.Linear;
             try
             {
                 PlayerSettings.SetApplicationIdentifier(

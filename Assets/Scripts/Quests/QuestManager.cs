@@ -114,13 +114,24 @@ namespace DHJ.Quests
             string door = justCompleted.id switch
             {
                 "m1_enter"        => "early_life",
+                "m2_earlylife"    => "social_reform",
+                "m3_reform"       => "constitution",
+                "m4_constitution" => "scholarship",
+                "m5_archive"      => "memorials",
+                "m6_memorials"    => "legacy",
+                _ => null
+            };
+            if (door != null) GameManager.I.Save.UnlockDoor(door);
+            // Also ensure the next zone door in sequence is unlocked if early_life & social_reform started open
+            string extraDoor = justCompleted.id switch
+            {
                 "m2_earlylife"    => "constitution",
                 "m3_reform"       => "scholarship",
                 "m4_constitution" => "memorials",
                 "m5_archive"      => "legacy",
                 _ => null
             };
-            if (door != null) GameManager.I.Save.UnlockDoor(door);
+            if (extraDoor != null) GameManager.I.Save.UnlockDoor(extraDoor);
         }
 
         public bool IsDoorUnlocked(string zoneId)

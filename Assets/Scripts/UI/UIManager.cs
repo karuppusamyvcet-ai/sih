@@ -110,6 +110,7 @@ namespace DHJ.UI
         private void UpdateInputLock()
         {
             GameInput.Enabled = _openPanels.Count == 0;
+            GameManager.I?.Audio.SetModalAcoustics(_openPanels.Count > 0);
             if (GameManager.I != null && GameManager.I.State == GameState.UI && _openPanels.Count == 0)
                 GameManager.I.SetState(GameState.Playing);
             if (_openPanels.Count > 0)
@@ -243,7 +244,7 @@ namespace DHJ.UI
             return img;
         }
 
-        /// <summary>Centered window panel; returns content RectTransform.</summary>
+        /// <summary>Centered window panel with engraved brass museum framing; returns content RectTransform.</summary>
         protected RectTransform Window(RectTransform root, Vector2 size, string title)
         {
             Scrim(root);
@@ -251,22 +252,34 @@ namespace DHJ.UI
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(-size.x / 2, -size.y / 2), new Vector2(size.x / 2, size.y / 2));
             UIFactory.Panel(rt.gameObject, "bg");
+            if (AssetLibrary.I != null && AssetLibrary.I.roundedGold != null)
+            {
+                var frame = UIFactory.Img(rt.gameObject, "brassFrame", AssetLibrary.I.roundedGold,
+                    new Color(1f, 1f, 1f, 0.92f), Image.Type.Sliced);
+                frame.raycastTarget = false;
+            }
             // title bar
             var bar = UIFactory.Rt(rt.gameObject, "titlebar", new Vector2(0, 1), new Vector2(1, 1),
-                                   new Vector2(0, -64), Vector2.zero);
-            UIFactory.Img(bar.gameObject, "barbg", null, new Color(1, 1, 1, 0.03f));
-            UIFactory.TextAt(bar.gameObject, "title", title, UITheme.H2, UITheme.Gold,
-                             new Vector2(0, 0), new Vector2(0.85f, 1)).alignment =
-                TMPro.TextAlignmentOptions.MidlineLeft;
-            bar.GetComponentInChildren<TMPro.TextMeshProUGUI>().margin = new Vector4(28, 0, 0, 0);
+                                   new Vector2(0, -68), Vector2.zero);
+            UIFactory.Img(bar.gameObject, "barbg", null, new Color(0.83f, 0.66f, 0.30f, 0.06f));
+            var rule = UIFactory.Rt(bar.gameObject, "brassRule", new Vector2(0.02f, 0), new Vector2(0.98f, 0),
+                                    new Vector2(0, 0), new Vector2(0, 2));
+            UIFactory.Img(rule.gameObject, "r", null, UITheme.GoldDim);
+
+            var titleTmp = UIFactory.TextAt(bar.gameObject, "title", title, UITheme.H2, UITheme.Gold,
+                             new Vector2(0, 0), new Vector2(0.85f, 1));
+            titleTmp.alignment = TMPro.TextAlignmentOptions.MidlineLeft;
+            titleTmp.fontStyle = TMPro.FontStyles.Bold;
+            titleTmp.characterSpacing = 3.5f;
+            titleTmp.margin = new Vector4(28, 0, 0, 0);
             var closeBtn = UIFactory.Button(bar.gameObject, "✕", () => ui.Pop(this), UITheme.PanelSoft, UITheme.H2);
-            ((RectTransform)closeBtn.transform).anchorMin = new Vector2(0.94f, 0.12f);
-            ((RectTransform)closeBtn.transform).anchorMax = new Vector2(0.99f, 0.88f);
+            ((RectTransform)closeBtn.transform).anchorMin = new Vector2(0.94f, 0.14f);
+            ((RectTransform)closeBtn.transform).anchorMax = new Vector2(0.988f, 0.86f);
             ((RectTransform)closeBtn.transform).offsetMin = Vector2.zero;
             ((RectTransform)closeBtn.transform).offsetMax = Vector2.zero;
 
             var content = UIFactory.Rt(rt.gameObject, "content", Vector2.zero, Vector2.one,
-                                       new Vector2(28, 24), new Vector2(-28, -76));
+                                       new Vector2(28, 24), new Vector2(-28, -80));
             return content;
         }
     }

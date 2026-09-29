@@ -98,7 +98,7 @@ namespace DHJ.Core
             StartCoroutine(StartHub(intro: true));
         }
 
-        public void ContinueJourney() => StartCoroutine(StartHub(intro: false));
+        public void ContinueJourney() => StartCoroutine(ResumeSavedScene());
 
         private System.Collections.IEnumerator StartHub(bool intro)
         {
@@ -106,6 +106,17 @@ namespace DHJ.Core
             Save.Data.playIntroOnHubEntry = intro;
             yield return SceneFlow.SwitchTo("MuseumHub");
             SetState(intro ? GameState.Cinematic : GameState.Playing);
+        }
+
+        private System.Collections.IEnumerator ResumeSavedScene()
+        {
+            SetState(GameState.Cinematic);
+            Save.Data.playIntroOnHubEntry = false;
+            string scene = Save.Data.lastScene;
+            if (string.IsNullOrEmpty(scene) || scene == "Boot" || scene == "MainMenu")
+                scene = "MuseumHub";
+            yield return SceneFlow.SwitchTo(scene);
+            SetState(GameState.Playing);
         }
 
         public void CapturePlayerPosition()
@@ -143,9 +154,17 @@ namespace DHJ.Core
             if (Input.GetKeyDown(KeyCode.Escape)) HandleBackButton();   // Esc on PC, Back on Android
             if (State == GameState.Playing)
             {
+                if (GameInput.ArchivePressed) UI.UIManager.instance?.ShowArchive();
+                else if (Input.GetKeyDown(KeyCode.M)) UI.UIManager.instance?.ShowMap();
+
                 int slot = (int)(Time.unscaledTime / 30f);
                 if (slot != _lastAutosaveSlot) { _lastAutosaveSlot = slot; CapturePlayerPosition(); Save.TickAutosave(); }
             }
+        }
+
+        private void LateUpdate()
+        {
+            GameInput.EndFrame();
         }
 
         /// <summary>Esc on PC / Back on Android — routed to UI first, then pause.</summary>

@@ -15,7 +15,7 @@ namespace DHJ.UI
     public class HUDController : MonoBehaviour
     {
         private UIManager _ui;
-        private TextMeshProUGUI _objectiveText, _pointsText, _toastText, _subtitleText, _promptText;
+        private TextMeshProUGUI _objectiveText, _pointsText, _toastText, _subtitleText, _promptText, _galleryCompassText;
         private GameObject _promptGo, _bannerGo;
         private CanvasGroup _toastCg, _subtitleCg, _bannerCg;
         private RectTransform _banner;
@@ -44,16 +44,32 @@ namespace DHJ.UI
             var L = GameManager.I.Localization;
             bool touch = GameManager.I.IsTouchPlatform;
 
-            // ---- top-left: objective --------------------------
+            // ---- top-left: curatorial objective plaque --------
             _banner = UIFactory.Rt(gameObject, "objective", new Vector2(0, 1), new Vector2(0, 1),
-                                   new Vector2(20, -116), new Vector2(430, -20));
+                                   new Vector2(20, -118), new Vector2(440, -20));
             var bannerPanel = UIFactory.Panel(_banner.gameObject, "bg", UITheme.BgInk);
+            if (AssetLibrary.I != null && AssetLibrary.I.roundedGold != null)
+                UIFactory.Img(_banner.gameObject, "frame", AssetLibrary.I.roundedGold, new Color(1, 1, 1, 0.72f), Image.Type.Sliced).raycastTarget = false;
+            var accentBar = UIFactory.Rt(_banner.gameObject, "accent", new Vector2(0, 0.14f), new Vector2(0, 0.86f), new Vector2(8, 0), new Vector2(12, 0));
+            UIFactory.Img(accentBar.gameObject, "bar", null, UITheme.Gold);
             _bannerCg = bannerPanel.gameObject.AddComponent<CanvasGroup>();
-            UIFactory.TextAt(_banner.gameObject, "eyebrow", L.T("hud.objective"), UITheme.Tiny,
-                             UITheme.Gold, new Vector2(0, 0.62f), new Vector2(1, 1f)).margin = new Vector4(16, 4, 0, 0);
+            var eyebrow = UIFactory.TextAt(_banner.gameObject, "eyebrow", "◈  " + L.T("hud.objective").ToUpperInvariant(), UITheme.Tiny,
+                             UITheme.Gold, new Vector2(0, 0.62f), new Vector2(1, 1f), TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            eyebrow.characterSpacing = 4f;
+            eyebrow.margin = new Vector4(22, 4, 12, 0);
             _objectiveText = UIFactory.TextAt(_banner.gameObject, "text", "—", UITheme.Small, UITheme.Cream,
-                                              new Vector2(0, 0), new Vector2(1, 0.66f));
-            _objectiveText.margin = new Vector4(16, 2, 8, 6);
+                                              new Vector2(0, 0), new Vector2(1, 0.64f));
+            _objectiveText.margin = new Vector4(22, 2, 12, 6);
+
+            // ---- top-center: gallery wing & compass header ----
+            var topCenter = UIFactory.Rt(gameObject, "galleryHeader", new Vector2(0.5f, 1), new Vector2(0.5f, 1),
+                                         new Vector2(-240, -64), new Vector2(240, -20));
+            UIFactory.Panel(topCenter.gameObject, "bg", UITheme.BgInk);
+            if (AssetLibrary.I != null && AssetLibrary.I.roundedGold != null)
+                UIFactory.Img(topCenter.gameObject, "frame", AssetLibrary.I.roundedGold, new Color(1, 1, 1, 0.55f), Image.Type.Sliced).raycastTarget = false;
+            _galleryCompassText = UIFactory.TextAt(topCenter.gameObject, "t", "GRAND ROTUNDA HALL  ·  N", UITheme.Tiny,
+                                                   UITheme.Cream, Vector2.zero, Vector2.one, TextAlignmentOptions.Center, FontStyles.Bold);
+            _galleryCompassText.characterSpacing = 3.5f;
 
             // ---- top-right: points + buttons -------------------
             var topRight = UIFactory.Rt(gameObject, "topright", new Vector2(1, 1), new Vector2(1, 1),
@@ -61,6 +77,8 @@ namespace DHJ.UI
             var kpPanel = UIFactory.Panel(topRight.gameObject, "kp", UITheme.BgInk);
             ((RectTransform)kpPanel.transform).anchorMax = new Vector2(0.52f, 1);
             ((RectTransform)kpPanel.transform).offsetMax = Vector2.zero;
+            if (AssetLibrary.I != null && AssetLibrary.I.roundedGold != null)
+                UIFactory.Img(kpPanel.gameObject, "frame", AssetLibrary.I.roundedGold, new Color(1, 1, 1, 0.65f), Image.Type.Sliced).raycastTarget = false;
             _pointsText = UIFactory.TextAt(kpPanel.gameObject, "t", "✦ 0", UITheme.Body, UITheme.Gold,
                                            Vector2.zero, Vector2.one, TextAlignmentOptions.Center, FontStyles.Bold);
 
@@ -76,17 +94,24 @@ namespace DHJ.UI
                 _ui.ShowPause();
             }, UITheme.PanelSoft, UITheme.Small);
 
-            // ---- bottom-center: interact prompt ----------------
+            // ---- bottom-center: engraved museum interact prompt ----
             _promptGo = new GameObject("prompt", typeof(RectTransform));
             var prt = (RectTransform)_promptGo.transform;
             prt.SetParent(transform, false);
             prt.anchorMin = new Vector2(0.5f, 0); prt.anchorMax = new Vector2(0.5f, 0);
-            prt.offsetMin = new Vector2(-260, touch ? 190 : 90);
-            prt.offsetMax = new Vector2(260, touch ? 250 : 150);
-            var pp = UIFactory.Panel(_promptGo, "bg", new Color(UITheme.Gold.r, UITheme.Gold.g, UITheme.Gold.b, 0.92f));
-            _promptText = UIFactory.TextAt(_promptGo, "t", "E — Interact", UITheme.Body,
-                                           new Color(0.08f, 0.07f, 0.04f), Vector2.zero, Vector2.one,
-                                           TextAlignmentOptions.Center, FontStyles.Bold);
+            prt.offsetMin = new Vector2(-250, touch ? 190 : 88);
+            prt.offsetMax = new Vector2(250, touch ? 248 : 146);
+            UIFactory.Panel(_promptGo, "bg", UITheme.BgInk);
+            if (AssetLibrary.I != null && AssetLibrary.I.roundedGold != null)
+                UIFactory.Img(_promptGo, "frame", AssetLibrary.I.roundedGold, new Color(1, 1, 1, 0.92f), Image.Type.Sliced).raycastTarget = false;
+            var keycapRt = UIFactory.Rt(_promptGo, "keycap", new Vector2(0, 0.15f), new Vector2(0, 0.85f), new Vector2(12, 0), new Vector2(54, 0));
+            UIFactory.Panel(keycapRt.gameObject, "kbg", UITheme.Gold);
+            UIFactory.TextAt(keycapRt.gameObject, "klbl", "E", UITheme.Body, new Color(0.08f, 0.07f, 0.04f),
+                             Vector2.zero, Vector2.one, TextAlignmentOptions.Center, FontStyles.Bold);
+            _promptText = UIFactory.TextAt(_promptGo, "t", "Interact", UITheme.Body,
+                                           UITheme.Cream, new Vector2(0, 0), new Vector2(1, 1),
+                                           TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            _promptText.margin = new Vector4(68, 0, 16, 0);
             _promptGo.SetActive(false);
 
             // ---- bottom-left: toast ----------------------------
@@ -190,12 +215,37 @@ namespace DHJ.UI
                     string prompt = pi.Current.Prompt;
                     _promptText.text = GameManager.I.IsTouchPlatform
                         ? $"⟶  {prompt}"
-                        : $"E  ·  {prompt}";
+                        : prompt;
                     if (_interactBtn != null) _interactBtn.SetActive(true);
                 }
             }
             if (_interactBtn != null && !showPrompt) _interactBtn.SetActive(false);
             _promptGo.SetActive(showPrompt && !GameManager.I.IsTouchPlatform);
+
+            // gallery header + cardinal compass
+            if (_galleryCompassText != null)
+            {
+                string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+                string wing = sceneName switch
+                {
+                    "MuseumHub"            => "GRAND ROTUNDA HALL",
+                    "Gallery_EarlyLife"    => "GALLERY I · EARLY LIFE & EDUCATION",
+                    "Gallery_SocialReform" => "GALLERY II · SOCIAL REFORM",
+                    "Gallery_Constitution" => "GALLERY III · LAW & CONSTITUTION",
+                    "Gallery_Scholarship"  => "GALLERY IV · BOOKS & SCHOLARSHIP",
+                    "Gallery_Memorials"    => "GALLERY V · MEMORIALS & SITES",
+                    "Gallery_Legacy"       => "GALLERY VI · LEGACY ARCHIVE",
+                    _                      => sceneName.ToUpperInvariant()
+                };
+                string heading = "N";
+                if (Camera.main != null)
+                {
+                    string[] dirs = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
+                    int idx = Mathf.RoundToInt(Mathf.Repeat(Camera.main.transform.eulerAngles.y, 360f) / 45f) % 8;
+                    heading = dirs[idx];
+                }
+                _galleryCompassText.text = $"{wing}   <color=#D4A84C>·   {heading}</color>";
+            }
 
             // points
             if (_pointsText != null)

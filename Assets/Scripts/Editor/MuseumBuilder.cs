@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using TMPro;
 using DHJ.Data;
@@ -22,7 +23,7 @@ namespace DHJ.EditorTools
     public static class MuseumBuilder
     {
         // ------------------------------------------------------------ shared
-        private static readonly Color Warm = new(1f, 0.90f, 0.76f);
+        private static readonly Color Warm = new(1f, 0.91f, 0.78f);
         private static readonly Color WarmDim = new(1f, 0.88f, 0.70f);
 
         public static readonly Dictionary<string, Color> ZoneAccent = new()
@@ -63,16 +64,76 @@ namespace DHJ.EditorTools
             l.color = Warm;
             l.intensity = intensity;
             l.shadows = LightShadows.Soft;
-            l.shadowStrength = 0.8f;
+            l.shadowStrength = 0.68f;
+            l.shadowBias = 0.03f;
+            l.shadowNormalBias = 0.35f;
             go.transform.rotation = Quaternion.Euler(euler);
             SceneManager_MoveToScene(go, scene);
 
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.98f, 0.94f, 0.86f) * 0.42f;
+            // Soft architectural bounce fill light from opposite azimuth (shadowless, zero shadow-map cost)
+            var fillGo = new GameObject("ArchitecturalBounceFill");
+            var fill = fillGo.AddComponent<Light>();
+            fill.type = LightType.Directional;
+            fill.color = new Color(0.95f, 0.89f, 0.78f);
+            fill.intensity = intensity * 0.26f;
+            fill.shadows = LightShadows.None;
+            fillGo.transform.rotation = Quaternion.Euler(26f, euler.y + 180f, 0f);
+            SceneManager_MoveToScene(fillGo, scene);
+
+            // Realistic Trilight ambient environment (skylight zenith + sandstone horizon + marble floor bounce)
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.46f, 0.50f, 0.58f);
+            RenderSettings.ambientEquatorColor = new Color(0.40f, 0.36f, 0.30f);
+            RenderSettings.ambientGroundColor = new Color(0.24f, 0.22f, 0.20f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = new Color(0.75f, 0.72f, 0.65f);
-            RenderSettings.fogDensity = 0.012f;
+            RenderSettings.fogDensity = 0.0085f;
+        }
+
+        private static void AddReflectionProbe(Transform parent, float w, float h, float d)
+        {
+            var probeGo = new GameObject("HallReflectionProbe");
+            probeGo.transform.SetParent(parent, false);
+            probeGo.transform.localPosition = new Vector3(0f, h * 0.45f, 0f);
+            var probe = probeGo.AddComponent<ReflectionProbe>();
+            probe.mode = ReflectionProbeMode.Realtime;
+            probe.refreshMode = ReflectionProbeRefreshMode.OnAwake;
+            probe.timeSlicingMode = ReflectionProbeTimeSlicingMode.AllFacesAtOnce;
+            probe.boxProjection = true;
+            probe.size = new Vector3(w + 2f, h + 2f, d + 2f);
+            probe.resolution = 128;
+            probe.intensity = 0.85f;
+            probe.hdr = true;
+        }
+
+        private static void BuildSkylightAtrium(Transform parent, float ceilingH, float w, float d)
+        {
+            var sky = new GameObject("SkylightAtrium");
+            sky.transform.SetParent(parent, false);
+            sky.transform.localPosition = new Vector3(0f, ceilingH - 0.02f, 0f);
+
+            PropLibrary.Mk("FrameN", sky.transform, ProceduralMesh.Box("SkyFN", w + 0.8f, 0.42f, 0.42f),
+                MaterialLibrary.Marble, new Vector3(0, -0.14f, d / 2f));
+            PropLibrary.Mk("FrameS", sky.transform, ProceduralMesh.Box("SkyFS", w + 0.8f, 0.42f, 0.42f),
+                MaterialLibrary.Marble, new Vector3(0, -0.14f, -d / 2f));
+            PropLibrary.Mk("FrameE", sky.transform, ProceduralMesh.Box("SkyFE", 0.42f, 0.42f, d),
+                MaterialLibrary.Marble, new Vector3(w / 2f, -0.14f, 0));
+            PropLibrary.Mk("FrameW", sky.transform, ProceduralMesh.Box("SkyFW", 0.42f, 0.42f, d),
+                MaterialLibrary.Marble, new Vector3(-w / 2f, -0.14f, 0));
+
+            var daylightMat = MaterialLibrary.Get("SkylightDaylight",
+                new Color(0.92f, 0.96f, 1.0f), null, 0.9f, 0f, null, new Color(0.85f, 0.90f, 0.98f) * 1.1f);
+            PropLibrary.Mk("DaylightPane", sky.transform, ProceduralMesh.Box("SkyPane", w - 0.2f, 0.05f, d - 0.2f),
+                daylightMat, new Vector3(0, -0.04f, 0));
+
+            for (int i = -1; i <= 1; i++)
+            {
+                PropLibrary.Mk("MullionX_" + i, sky.transform, ProceduralMesh.Box("SkyMX", w, 0.10f, 0.09f),
+                    MaterialLibrary.Gold, new Vector3(0, -0.11f, i * (d * 0.28f)));
+                PropLibrary.Mk("MullionZ_" + i, sky.transform, ProceduralMesh.Box("SkyMZ", 0.09f, 0.10f, d),
+                    MaterialLibrary.Gold, new Vector3(i * (w * 0.28f), -0.11f, 0));
+            }
         }
 
         private static void SceneManager_MoveToScene(GameObject go, Scene scene) =>
@@ -83,8 +144,10 @@ namespace DHJ.EditorTools
             var go = new GameObject("Main Camera");
             go.tag = "MainCamera";
             var cam = go.AddComponent<Camera>();
-            cam.fieldOfView = 58f;
+            cam.fieldOfView = 56f;
             cam.nearClipPlane = 0.08f;
+            cam.allowHDR = true;
+            cam.allowMSAA = true;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.10f, 0.12f, 0.20f);
             go.AddComponent<AudioListener>();
@@ -165,6 +228,8 @@ namespace DHJ.EditorTools
             var shell = PropLibrary.RoomShell("HubShell", W, H, D,
                 MaterialLibrary.Marble, MaterialLibrary.Sandstone, MaterialLibrary.CeilingMat);
             SceneManager_MoveToScene(shell, scene);
+            AddReflectionProbe(shell.transform, W, H, D);
+            BuildSkylightAtrium(shell.transform, H, 14f, 12f);
 
             // carpet runners: entrance → rotunda → doors
             PropLibrary.Mk("Runner_Main", shell.transform, ProceduralMesh.Box("Runner64", 4.4f, 0.02f, D - 4),
@@ -179,12 +244,17 @@ namespace DHJ.EditorTools
 
             Sun(scene, 1.15f, new Vector3(48, -30, 0));
 
-            // ---------- rotunda centerpiece: framed artistic portrait
+            // ---------- rotunda centerpiece: inlaid floor medallion + dais + stanchion ring + portrait
+            PropLibrary.Mk("RotundaFloorMedallion", shell.transform,
+                ProceduralMesh.Disc("Hub_Medallion", 7.2f, 64), MaterialLibrary.FloorMedallion,
+                new Vector3(0, 0.016f, 0));
             PropLibrary.Mk("RotundaDais", shell.transform,
                 ProceduralMesh.Cylinder("RotundaDais", 5.2f, 5.6f, 0.35f, 40), MaterialLibrary.MarbleBlue,
                 new Vector3(0, 0, 0), default, null, true);
             PropLibrary.Mk("RotundaRing", shell.transform, ProceduralMesh.Torus("RotundaRing", 5.45f, 0.06f, 40, 8),
                 MaterialLibrary.Gold, new Vector3(0, 0.38f, 0));
+            PropLibrary.StanchionRing(shell.transform, Vector3.zero, 6.1f, 12, skipSegment: 6);
+
             var portraitSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Images/portrait_ambedkar_art.png");
             var display = PropLibrary.PortraitDisplay(shell.transform, new Vector3(0, 1.1f, 0), 0f, portraitSprite);
             foreach (var a in new[] { 45f, 135f, 225f, 315f })
@@ -197,7 +267,7 @@ namespace DHJ.EditorTools
             }
             // information plaque
             PropLibrary.CaptionPlate(shell.transform, new Vector3(0, 1.0f, -4.6f),
-                "DR. B. R. AMBEDKAR\n1891 – 1956\nArtistic visualization — the character follows the supplied reference sheet",
+                "DR. B. R. AMBEDKAR\n1891 – 1956\nScholar • Social Reformer • Chief Architect of the Constitution",
                 4.2f, 0.19f);
 
             // ---------- reception + guide kiosk (mission 1 target)
@@ -423,6 +493,8 @@ namespace DHJ.EditorTools
             var shell = PropLibrary.RoomShell("GalleryShell_" + zone.zoneId, W, H, D,
                 MaterialLibrary.Marble, MaterialLibrary.Sandstone, MaterialLibrary.CeilingMat);
             SceneManager_MoveToScene(shell, scene);
+            AddReflectionProbe(shell.transform, W, H, D);
+            BuildSkylightAtrium(shell.transform, H, 10f, 10f);
 
             // zone accent band around the walls
             PropLibrary.Mk("AccentBandN", shell.transform, ProceduralMesh.Box($"AB_{zone.zoneId}", W - 0.2f, 0.35f, 0.1f),
@@ -459,6 +531,11 @@ namespace DHJ.EditorTools
             // ---------- zone-specific centerpieces
             if (zone.zoneId == "constitution")
             {
+                PropLibrary.Mk("ConFloorMedallion", shell.transform,
+                    ProceduralMesh.Disc("Con_Medallion", 4.4f, 48), MaterialLibrary.FloorMedallion,
+                    new Vector3(0, 0.015f, 3f));
+                PropLibrary.StanchionRing(shell.transform, new Vector3(0, 0, 3f), 3.6f, 8, skipSegment: 4);
+
                 var ct = PropLibrary.ConstitutionTable(shell.transform, new Vector3(0, 0, 3f));
                 var ctComp = ct.AddComponent<ExhibitInteractable>();
                 var e = FindExhibit(zone, "ct_table");
@@ -467,7 +544,6 @@ namespace DHJ.EditorTools
                 ctCol.center = new Vector3(0, 1.0f, 0); ctCol.size = new Vector3(3.4f, 2.2f, 3.4f);
                 PropLibrary.SpotlightFixture(shell.transform, new Vector3(0, H - 0.5f, 3f),
                     new Vector3(90, 0, 0), "ct", 3.4f, 12f, Warm);
-                // pillars of light at corners
             }
 
             if (zone.zoneId == "scholarship")
@@ -503,7 +579,7 @@ namespace DHJ.EditorTools
                 foreach (var e in zone.exhibits)
                 {
                     var pos = new Vector3(-8f + (di % 3) * 8f, 0, di < 3 ? -5.5f : 5.5f);
-                    SpawnExhibit(parent, e, pos, 0f, accent, H);
+                    SpawnExhibit(parent, e, pos, 0f, accent, H, zone.zoneId);
                     di++;
                 }
                 return;
@@ -534,11 +610,11 @@ namespace DHJ.EditorTools
                     pos = new Vector3(-9f + island * 6f, 0, -2f);
                     yaw = 0f; island++;
                 }
-                SpawnExhibit(parent, e, pos, yaw, accent, H);
+                SpawnExhibit(parent, e, pos, yaw, accent, H, zone.zoneId);
             }
         }
 
-        private static void SpawnExhibit(Transform parent, ExhibitDto e, Vector3 pos, float yaw, Color accent, float H)
+        private static void SpawnExhibit(Transform parent, ExhibitDto e, Vector3 pos, float yaw, Color accent, float H, string zoneId)
         {
             GameObject go;
             switch (e.Kind)
@@ -579,10 +655,10 @@ namespace DHJ.EditorTools
                     PropLibrary.SpotlightFixture(parent, pos + new Vector3(0, H - 0.8f, 0),
                         new Vector3(90, 0, 0), e.id, 2.8f, 11f, Warm);
                     PropLibrary.CaptionPlate(parent, pos + new Vector3(0, 0.9f, -2.3f),
-                        e.title + "\nDigital reconstruction (stylized)", 3.2f, 0.15f);
+                        e.title + "\nDigital reconstruction (scale model)", 3.2f, 0.15f);
                     break;
                 default: // Pedestal
-                    bool isDoc = zone.zoneId is "scholarship" or "social_reform" or "early_life";
+                    bool isDoc = zoneId is "scholarship" or "social_reform" or "early_life";
                     go = PropLibrary.Pedestal(parent, pos, isDoc ? "document" : "prism");
                     break;
             }
@@ -632,12 +708,16 @@ namespace DHJ.EditorTools
         public static void BuildMenuScene(Scene scene)
         {
             Sun(scene, 1.1f, new Vector3(42, 20, 0));
-            RenderSettings.fogDensity = 0.010f;
+            RenderSettings.fogDensity = 0.008f;
 
             var stage = new GameObject("MenuStage");
             SceneManager_MoveToScene(stage, scene);
+            AddReflectionProbe(stage.transform, 26f, 8f, 26f);
+
             PropLibrary.Mk("Floor", stage.transform, ProceduralMesh.Box("MenuFloor", 26, 0.3f, 26),
                 MaterialLibrary.Marble, new Vector3(0, -0.15f, 0), default, null, true);
+            PropLibrary.Mk("FloorMedallion", stage.transform, ProceduralMesh.Disc("MenuMedDisc", 4.6f, 48),
+                MaterialLibrary.FloorMedallion, new Vector3(0, 0.015f, 0));
             PropLibrary.Mk("Medallion", stage.transform, ProceduralMesh.Torus("MenuMed", 4.6f, 0.08f, 40, 8),
                 MaterialLibrary.Gold, new Vector3(0, 0.02f, 0));
             foreach (var a in new[] { 0f, 90f, 180f, 270f })
@@ -645,9 +725,10 @@ namespace DHJ.EditorTools
                 var rad = a * Mathf.Deg2Rad;
                 PropLibrary.Column(stage.transform, new Vector3(Mathf.Sin(rad) * 8.5f, 0, Mathf.Cos(rad) * 8.5f), 7.5f, 0.42f);
             }
-            // rotunda portrait as the visual anchor
+            // rotunda portrait as the visual anchor + brass stanchion ring
             PropLibrary.Mk("Dais", stage.transform, ProceduralMesh.Cylinder("MenuDais", 3.4f, 3.7f, 0.3f, 36),
                 MaterialLibrary.MarbleBlue, Vector3.zero, default, null, true);
+            PropLibrary.StanchionRing(stage.transform, Vector3.zero, 4.35f, 8, skipSegment: 4);
             var portraitSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Images/portrait_ambedkar_art.png");
             PropLibrary.PortraitDisplay(stage.transform, new Vector3(0, 0.9f, 0), 0f, portraitSprite);
             PropLibrary.SpotlightFixture(stage.transform, new Vector3(0, 7.2f, 2.5f), new Vector3(35, 180, 0),
@@ -669,6 +750,8 @@ namespace DHJ.EditorTools
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
             cam.fieldOfView = 50f;
+            cam.allowHDR = true;
+            cam.allowMSAA = true;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.07f, 0.09f, 0.16f);
             camGo.AddComponent<AudioListener>();
