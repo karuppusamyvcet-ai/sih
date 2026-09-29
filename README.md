@@ -2,7 +2,7 @@
 
 **SIH 2026 — Problem SIH26096** · *Digital Heritage Archive for Memorials, Manuscripts & Dr. B. R. Ambedkar*
 Theme: Smart Education · Ministry of Social Justice & Empowerment
-Team: **[TEAM NAME]** — see `Documentation/TeamCredits.md`
+Team:Binary Coders — see `Documentation/TeamCredits.md`
 
 A complete, offline-first, cross-platform educational 3D exploration game in which the
 player walks through the *Digital Ambedkar Heritage Museum* as Dr. B. R. Ambedkar
