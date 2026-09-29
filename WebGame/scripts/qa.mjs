@@ -2,6 +2,7 @@
 // usage: node scripts/qa.mjs [--port 8410]
 import { createServer } from 'http';
 import { readFile } from 'fs/promises';
+import { mkdirSync } from 'fs';
 import { extname, join, normalize } from 'path';
 import { fileURLToPath } from 'url';
 import chromium from '@sparticuz/chromium';
@@ -42,7 +43,12 @@ const page = await browser.newPage();
 page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 
-const shot = (name) => page.screenshot({ path: `scripts/shots/${name}.png` });
+const SHOT_DIR = new URL('./shots/', import.meta.url).pathname;
+mkdirSync(SHOT_DIR, { recursive: true });
+const shot = async (name) => {
+  try { await page.screenshot({ path: `${SHOT_DIR}${name}.png` }); }
+  catch (e) { errors.push('screenshot ' + name + ': ' + e.message); }
+};
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 try {

@@ -16,7 +16,7 @@ android {
 
     signingConfigs {
         release {
-            storeFile file(project.findProperty('DHJ_STORE_FILE') ?: 'dhj-release.keystore')
+            storeFile rootProject.file(project.findProperty('DHJ_STORE_FILE') ?: 'dhj-release.keystore')
             storePassword project.findProperty('DHJ_STORE_PASSWORD') ?: 'ambedkar2026'
             keyAlias project.findProperty('DHJ_KEY_ALIAS') ?: 'dhj'
             keyPassword project.findProperty('DHJ_KEY_PASSWORD') ?: 'ambedkar2026'
