@@ -5,11 +5,12 @@ using UnityEditor.Animations;
 namespace DHJ.EditorTools
 {
     /// <summary>
-    /// Generates all character AnimationClips (transform-path curves matching
-    /// CharacterFactory's rig) plus the AnimatorController:
+    /// Generates all character AnimationClips (biomechanically natural transform
+    /// curves matching CharacterFactory's rig) plus the AnimatorController:
     ///
-    ///   Idle(breathing) ⇄ Walk ⇄ Run      [Speed float]
-    ///   Interact / Read / Examine / Talk / Greet  [trigger → back to Idle]
+    ///   Idle(breathing + subtle weight shift) ⇄ Walk(pelvic-thoracic counter-rotation,
+    ///     heel-strike/toe-off ankle articulation, elbow lag) ⇄ Run  [Speed float]
+    ///   Interact / Read / Examine / Talk / Greet                    [trigger → back to Idle]
     /// </summary>
     public static class AnimationFactory
     {
@@ -21,7 +22,8 @@ namespace DHJ.EditorTools
         private const string Hips   = "Rig/Hips";
         private const string Spine  = Hips + "/Spine";
         private const string Chest  = Spine + "/Chest";
-        private const string Head   = Chest + "/Neck/Head";
+        private const string Neck   = Chest + "/Neck";
+        private const string Head   = Neck + "/Head";
         private const string ShL    = Chest + "/ShoulderL";
         private const string ShR    = Chest + "/ShoulderR";
         private const string FaL    = ShL + "/ForearmL";
@@ -30,6 +32,8 @@ namespace DHJ.EditorTools
         private const string ThR    = Hips + "/ThighR";
         private const string SnL    = ThL + "/ShinL";
         private const string SnR    = ThR + "/ShinR";
+        private const string FtL    = SnL + "/FootL";
+        private const string FtR    = SnR + "/FootR";
 
         public static RuntimeAnimatorController EnsureController()
         {
@@ -37,14 +41,14 @@ namespace DHJ.EditorTools
             if (existing != null) return existing;
             EnsureDirs();
 
-            var idle    = Idle();
-            var walk    = Walk();
-            var run     = Run();
-            var interact= Interact();
-            var read    = Read();
-            var examine = Examine();
-            var talk    = Talk();
-            var greet   = Greet();
+            var idle     = Idle();
+            var walk     = Walk();
+            var run      = Run();
+            var interact = Interact();
+            var read     = Read();
+            var examine  = Examine();
+            var talk     = Talk();
+            var greet    = Greet();
 
             var c = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
             c.AddParameter("Speed", AnimatorControllerParameterType.Float);
@@ -82,10 +86,10 @@ namespace DHJ.EditorTools
         private static void TwoWay(AnimatorState a, AnimatorState b, float low, float high, string param)
         {
             var ab = a.AddTransition(b);
-            ab.hasExitTime = false; ab.duration = 0.18f;
+            ab.hasExitTime = false; ab.duration = 0.20f;
             ab.AddCondition(AnimatorConditionMode.Greater, high, param);
             var ba = b.AddTransition(a);
-            ba.hasExitTime = false; ba.duration = 0.22f;
+            ba.hasExitTime = false; ba.duration = 0.24f;
             ba.AddCondition(AnimatorConditionMode.Less, low, param);
         }
 
@@ -94,13 +98,12 @@ namespace DHJ.EditorTools
         {
             var st = AddState(sm, trigger, clip);
             var go = idle.AddTransition(st);
-            go.hasExitTime = false; go.duration = 0.15f;
+            go.hasExitTime = false; go.duration = 0.18f;
             go.AddCondition(AnimatorConditionMode.If, 0, trigger);
             var back = st.AddTransition(idle);
             back.hasExitTime = true;
             back.exitTime = 0.90f;
-            back.duration = 0.25f;
-            // walk interrupts gestures naturally via Speed transitions from Idle
+            back.duration = 0.28f;
         }
 
         // ------------------------------------------------------------ clip authoring
@@ -149,104 +152,138 @@ namespace DHJ.EditorTools
         private static AnimationClip Idle()
         {
             var c = NewClip("Idle", true);
-            Rot(c, Chest, "y", 0, 0, 4, 0, 8, 0);
-            Rot(c, Chest, "x", 0, 0, 2, 1.6f, 4, 0, 6, 1.6f, 8, 0);
-            Rot(c, Head, "x", 0, 0, 2, 1.2f, 4, 0, 6, -1.2f, 8, 0);
-            Rot(c, ShL, "z", 0, 12, 4, 13.5f, 8, 12);
-            Rot(c, ShR, "z", 0, -12, 4, -13.5f, 8, -12);
-            Rot(c, FaL, "x", 0, 0, 8, 0); Rot(c, FaR, "x", 0, 0, 8, 0);
-            Rot(c, Spine, "x", 0, 0, 8, 0);
+            // Calm diaphragmatic breathing + subtle scholarly weight shift over 8s cycle
+            PosY(c, Hips, 0, HIPS_Y, 2, HIPS_Y - 0.004f, 4, HIPS_Y, 6, HIPS_Y - 0.004f, 8, HIPS_Y);
+            Rot(c, Hips, "z", 0, 0, 4, 0.8f, 8, 0);
+            Rot(c, Spine, "x", 0, 0, 2, 0.8f, 4, 0, 6, 0.8f, 8, 0);
+            Rot(c, Chest, "x", 0, 0, 2, 1.8f, 4, 0, 6, 1.8f, 8, 0);
+            Rot(c, Chest, "y", 0, 0, 4, 1.2f, 8, 0);
+            Rot(c, Head, "x", 0, 0, 2, -1.0f, 4, 0, 6, 1.0f, 8, 0);
+            Rot(c, Head, "y", 0, 0, 3, 2.2f, 6, -1.8f, 8, 0);
+            Rot(c, ShL, "z", 0, 10, 2, 11.2f, 4, 10, 6, 11.2f, 8, 10);
+            Rot(c, ShR, "z", 0, -10, 2, -11.2f, 4, -10, 6, -11.2f, 8, -10);
+            Rot(c, FaL, "x", 0, -8, 4, -10, 8, -8);
+            Rot(c, FaR, "x", 0, -8, 4, -10, 8, -8);
             return c;
         }
 
         private static AnimationClip Walk()
         {
             var c = NewClip("Walk", true);
-            Rot(c, ThL, "x", 0, 25, 0.5f, -25, 1, 25);
-            Rot(c, ThR, "x", 0, -25, 0.5f, 25, 1, -25);
-            Rot(c, SnL, "x", 0, 4, 0.25f, 8, 0.65f, 42, 1, 4);
-            Rot(c, SnR, "x", 0, 42, 0.15f, 8, 0.5f, 4, 1, 42);
-            Rot(c, ShL, "x", 0, -18, 0.5f, 18, 1, -18);
-            Rot(c, ShR, "x", 0, 18, 0.5f, -18, 1, 18);
-            Rot(c, ShL, "z", 0, 12, 1, 12); Rot(c, ShR, "z", 0, -12, 1, -12);
-            Rot(c, FaL, "x", 0, 0, 1, 0);   Rot(c, FaR, "x", 0, 0, 1, 0);
-            Rot(c, Chest, "x", 0, 0, 1, 0);
-            Rot(c, Spine, "x", 0, 0, 1, 0);
-            Rot(c, Hips, "z", 0, 2.5f, 0.5f, -2.5f, 1, 2.5f);
-            PosY(c, Hips, 0, HIPS_Y + 0.012f, 0.25f, HIPS_Y - 0.010f, 0.5f,
-                 HIPS_Y + 0.012f, 0.75f, HIPS_Y - 0.010f, 1, HIPS_Y + 0.012f);
+            // Lower body: hip swing, knee weight-acceptance & swing flexion, heel-strike/toe-off ankle pitch
+            Rot(c, ThL, "x", 0, 24, 0.25f, 4, 0.5f, -22, 0.75f, 2, 1, 24);
+            Rot(c, ThR, "x", 0, -22, 0.25f, 2, 0.5f, 24, 0.75f, 4, 1, -22);
+            Rot(c, SnL, "x", 0, 5, 0.15f, 14, 0.5f, 6, 0.72f, 44, 1, 5);
+            Rot(c, SnR, "x", 0, 6, 0.22f, 44, 0.5f, 5, 0.65f, 14, 1, 6);
+            Rot(c, FtL, "x", 0, -10, 0.15f, 2, 0.5f, 16, 0.75f, -6, 1, -10);
+            Rot(c, FtR, "x", 0, 16, 0.25f, -6, 0.5f, -10, 0.65f, 2, 1, 16);
+
+            // Pelvic list & counter-rotation vs thorax
+            Rot(c, Hips, "z", 0, 2.2f, 0.5f, -2.2f, 1, 2.2f);
+            Rot(c, Hips, "y", 0, -3.5f, 0.5f, 3.5f, 1, -3.5f);
+            PosY(c, Hips, 0, HIPS_Y - 0.008f, 0.25f, HIPS_Y + 0.014f, 0.5f,
+                 HIPS_Y - 0.008f, 0.75f, HIPS_Y + 0.014f, 1, HIPS_Y - 0.008f);
+
+            Rot(c, Spine, "x", 0, 1.8f, 1, 1.8f);
+            Rot(c, Chest, "x", 0, 1.5f, 0.25f, 2.4f, 0.5f, 1.5f, 0.75f, 2.4f, 1, 1.5f);
+            Rot(c, Chest, "y", 0, 4.0f, 0.5f, -4.0f, 1, 4.0f);
+            Rot(c, Head, "y", 0, -2.5f, 0.5f, 2.5f, 1, -2.5f);
+
+            // Arm swing with natural elbow flexion
+            Rot(c, ShL, "x", 0, -16, 0.5f, 18, 1, -16);
+            Rot(c, ShR, "x", 0, 18, 0.5f, -16, 1, 18);
+            Rot(c, ShL, "z", 0, 10, 1, 10);
+            Rot(c, ShR, "z", 0, -10, 1, -10);
+            Rot(c, FaL, "x", 0, -24, 0.5f, -10, 1, -24);
+            Rot(c, FaR, "x", 0, -10, 0.5f, -24, 1, -10);
             return c;
         }
 
         private static AnimationClip Run()
         {
             var c = NewClip("Run", true);
-            Rot(c, ThL, "x", 0, 42, 0.35f, -34, 0.7f, 42);
-            Rot(c, ThR, "x", 0, -34, 0.35f, 42, 0.7f, -34);
-            Rot(c, SnL, "x", 0, 10, 0.45f, 58, 0.7f, 10);
-            Rot(c, SnR, "x", 0, 58, 0.25f, 10, 0.7f, 58);
-            Rot(c, ShL, "x", 0, -30, 0.35f, 30, 0.7f, -30);
-            Rot(c, ShR, "x", 0, 30, 0.35f, -30, 0.7f, 30);
-            Rot(c, FaL, "x", 0, -45, 0.7f, -45); Rot(c, FaR, "x", 0, -45, 0.7f, -45);
-            Rot(c, Chest, "x", 0, 8, 0.7f, 8);
-            PosY(c, Hips, 0, HIPS_Y + 0.02f, 0.175f, HIPS_Y - 0.015f, 0.35f,
-                 HIPS_Y + 0.02f, 0.525f, HIPS_Y - 0.015f, 0.7f, HIPS_Y + 0.02f);
+            Rot(c, ThL, "x", 0, 38, 0.35f, -32, 0.7f, 38);
+            Rot(c, ThR, "x", 0, -32, 0.35f, 38, 0.7f, -32);
+            Rot(c, SnL, "x", 0, 12, 0.48f, 56, 0.7f, 12);
+            Rot(c, SnR, "x", 0, 56, 0.18f, 12, 0.7f, 56);
+            Rot(c, FtL, "x", 0, -12, 0.35f, 22, 0.7f, -12);
+            Rot(c, FtR, "x", 0, 22, 0.35f, -12, 0.7f, 22);
+
+            Rot(c, Hips, "y", 0, -5f, 0.35f, 5f, 0.7f, -5f);
+            Rot(c, Spine, "x", 0, 4.5f, 0.7f, 4.5f);
+            Rot(c, Chest, "x", 0, 6.5f, 0.7f, 6.5f);
+            Rot(c, Chest, "y", 0, 6f, 0.35f, -6f, 0.7f, 6f);
+            Rot(c, Head, "x", 0, -5f, 0.7f, -5f);
+
+            Rot(c, ShL, "x", 0, -28, 0.35f, 28, 0.7f, -28);
+            Rot(c, ShR, "x", 0, 28, 0.35f, -28, 0.7f, 28);
+            Rot(c, FaL, "x", 0, -48, 0.35f, -34, 0.7f, -48);
+            Rot(c, FaR, "x", 0, -34, 0.35f, -48, 0.7f, -34);
+            PosY(c, Hips, 0, HIPS_Y + 0.018f, 0.175f, HIPS_Y - 0.016f, 0.35f,
+                 HIPS_Y + 0.018f, 0.525f, HIPS_Y - 0.016f, 0.7f, HIPS_Y + 0.018f);
             return c;
         }
 
         private static AnimationClip Interact()
         {
             var c = NewClip("Interact", false);
-            Rot(c, ShR, "x", 0, 0, 0.35f, -58, 0.85f, -58, 1.2f, 0);
-            Rot(c, ShR, "z", 0, -12, 0.35f, -6, 0.85f, -6, 1.2f, -12);
-            Rot(c, FaR, "x", 0, 0, 0.35f, -18, 0.85f, -18, 1.2f, 0);
-            Rot(c, Head, "x", 0, 0, 0.35f, -4, 0.85f, -4, 1.2f, 0);
+            Rot(c, Spine, "x", 0, 0, 0.35f, 4, 0.85f, 4, 1.2f, 0);
+            Rot(c, ShR, "x", 0, 0, 0.35f, -54, 0.85f, -54, 1.2f, 0);
+            Rot(c, ShR, "z", 0, -10, 0.35f, -4, 0.85f, -4, 1.2f, -10);
+            Rot(c, FaR, "x", 0, -8, 0.35f, -24, 0.85f, -24, 1.2f, -8);
+            Rot(c, Head, "x", 0, 0, 0.35f, 5, 0.85f, 5, 1.2f, 0);
             return c;
         }
 
         private static AnimationClip Read()
         {
             var c = NewClip("Read", true);
-            Rot(c, ShL, "x", 0, -32, 3, -32); Rot(c, ShR, "x", 0, -32, 3, -32);
+            Rot(c, ShL, "x", 0, -30, 3, -30); Rot(c, ShR, "x", 0, -30, 3, -30);
             Rot(c, ShL, "z", 0, 4, 3, 4);     Rot(c, ShR, "z", 0, -4, 3, -4);
-            Rot(c, FaL, "x", 0, -82, 3, -82); Rot(c, FaR, "x", 0, -82, 3, -82);
-            Rot(c, Head, "x", 0, 9, 1.5f, 7, 3, 9);
-            Rot(c, Chest, "x", 0, 2, 1.5f, 3.5f, 3, 2);
+            Rot(c, FaL, "x", 0, -78, 3, -78); Rot(c, FaR, "x", 0, -78, 3, -78);
+            Rot(c, Neck, "x", 0, 5, 3, 5);
+            Rot(c, Head, "x", 0, 10, 1.5f, 8, 3, 10);
+            Rot(c, Head, "y", 0, -3, 1.5f, 3, 3, -3);
+            Rot(c, Chest, "x", 0, 3, 1.5f, 4.5f, 3, 3);
             return c;
         }
 
         private static AnimationClip Examine()
         {
             var c = NewClip("Examine", false);
-            Rot(c, Spine, "x", 0, 0, 0.6f, 13, 2.2f, 13, 3.2f, 0);
-            Rot(c, Head, "x", 0, 0, 0.6f, 8, 1.4f, 12, 2.2f, 8, 3.2f, 0);
-            Rot(c, Head, "z", 0, 0, 1.0f, -8, 2.0f, -8, 2.8f, 0);
-            Rot(c, ThL, "x", 0, 0, 0.6f, 5, 2.2f, 5, 3.2f, 0);
-            Rot(c, ThR, "x", 0, 0, 0.6f, 5, 2.2f, 5, 3.2f, 0);
-            PosY(c, Hips, 0, HIPS_Y, 0.6f, HIPS_Y - 0.05f, 2.2f, HIPS_Y - 0.05f, 3.2f, HIPS_Y);
-            Rot(c, ShR, "x", 0, 0, 0.9f, -40, 2.2f, -40, 3.2f, 0);
+            Rot(c, Spine, "x", 0, 0, 0.6f, 11, 2.2f, 11, 3.2f, 0);
+            Rot(c, Neck, "x", 0, 0, 0.6f, 4, 2.2f, 4, 3.2f, 0);
+            Rot(c, Head, "x", 0, 0, 0.6f, 7, 1.4f, 11, 2.2f, 7, 3.2f, 0);
+            Rot(c, Head, "z", 0, 0, 1.0f, -6, 2.0f, -6, 2.8f, 0);
+            Rot(c, ThL, "x", 0, 0, 0.6f, 4, 2.2f, 4, 3.2f, 0);
+            Rot(c, ThR, "x", 0, 0, 0.6f, 4, 2.2f, 4, 3.2f, 0);
+            PosY(c, Hips, 0, HIPS_Y, 0.6f, HIPS_Y - 0.04f, 2.2f, HIPS_Y - 0.04f, 3.2f, HIPS_Y);
+            Rot(c, ShR, "x", 0, 0, 0.9f, -36, 2.2f, -36, 3.2f, 0);
+            Rot(c, FaR, "x", 0, -8, 0.9f, -42, 2.2f, -42, 3.2f, -8);
             return c;
         }
 
         private static AnimationClip Talk()
         {
             var c = NewClip("Talk", true);
-            Rot(c, ShR, "x", 0, -25, 1.5f, -35, 3, -25);
-            Rot(c, FaR, "x", 0, -55, 0.75f, -70, 1.5f, -50, 2.25f, -70, 3, -55);
-            Rot(c, FaR, "z", 0, -10, 0.75f, 10, 1.5f, -10, 2.25f, 10, 3, -10);
-            Rot(c, ShL, "x", 0, -8, 3, -8);
+            Rot(c, ShR, "x", 0, -24, 1.5f, -34, 3, -24);
+            Rot(c, FaR, "x", 0, -54, 0.75f, -68, 1.5f, -48, 2.25f, -68, 3, -54);
+            Rot(c, FaR, "z", 0, -8, 0.75f, 8, 1.5f, -8, 2.25f, 8, 3, -8);
+            Rot(c, ShL, "x", 0, -10, 1.5f, -16, 3, -10);
+            Rot(c, FaL, "x", 0, -22, 1.5f, -30, 3, -22);
             Rot(c, Head, "x", 0, 3, 0.75f, -2, 1.5f, 3, 2.25f, -2, 3, 3);
+            Rot(c, Head, "y", 0, -2, 1.5f, 2, 3, -2);
             return c;
         }
 
         private static AnimationClip Greet()
         {
             var c = NewClip("Greet", false);
-            Rot(c, Head, "x", 0, 0, 0.4f, 14, 1.2f, 14, 1.8f, 0);
+            Rot(c, Head, "x", 0, 0, 0.4f, 13, 1.2f, 13, 1.8f, 0);
             Rot(c, ShL, "x", 0, 0, 0.4f, -28, 1.2f, -28, 1.8f, 0);
             Rot(c, ShR, "x", 0, 0, 0.4f, -28, 1.2f, -28, 1.8f, 0);
-            Rot(c, FaL, "x", 0, 0, 0.4f, -95, 1.2f, -95, 1.8f, 0);
-            Rot(c, FaR, "x", 0, 0, 0.4f, -95, 1.2f, -95, 1.8f, 0);
+            Rot(c, FaL, "x", 0, -8, 0.4f, -94, 1.2f, -94, 1.8f, -8);
+            Rot(c, FaR, "x", 0, -8, 0.4f, -94, 1.2f, -94, 1.8f, -8);
             Rot(c, Chest, "x", 0, 0, 0.4f, 5, 1.2f, 5, 1.8f, 0);
             return c;
         }

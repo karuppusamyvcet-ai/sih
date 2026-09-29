@@ -6,8 +6,8 @@ namespace DHJ.EditorTools
 {
     /// <summary>
     /// Parametric mesh builders saved as .asset meshes so generated scenes keep
-    /// stable references (no runtime mesh baking). Everything is flat-shaded /
-    /// smooth-shaded deliberately: clean, premium, museum-grade minimalism.
+    /// stable references (no runtime mesh baking). Computes normals, bounds, and
+    /// tangents so PBR normal maps render accurately under URP and Standard.
     /// </summary>
     public static class ProceduralMesh
     {
@@ -26,6 +26,7 @@ namespace DHJ.EditorTools
             var existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
             if (existing != null) AssetDatabase.DeleteAsset(path);
             m.RecalculateNormals();
+            m.RecalculateTangents();
             m.RecalculateBounds();
             AssetDatabase.CreateAsset(m, path);
             return m;
@@ -74,7 +75,7 @@ namespace DHJ.EditorTools
             {
                 float a = i / (float)seg * Mathf.PI * 2;
                 Vector3 dir = new(Mathf.Cos(a), 0, Mathf.Sin(a));
-                float slope = (rBottom - rTop) / h;
+                float slope = (rBottom - rTop) / Mathf.Max(0.001f, h);
                 Vector3 nrm = new Vector3(dir.x, slope, dir.z).normalized;
                 v.Add(dir * rBottom + Vector3.up * 0);          n.Add(nrm); uv.Add(new Vector2(i / (float)seg, 0));
                 v.Add(dir * rTop    + Vector3.up * h);          n.Add(nrm); uv.Add(new Vector2(i / (float)seg, 1));
@@ -92,6 +93,123 @@ namespace DHJ.EditorTools
                     tri.AddRange(new[] { ci, i0, i1 });
                 }
             }
+            return Save(name, FromLists(name, v, n, uv, tri));
+        }
+
+        /// <summary>Classical architectural column shaft with vertical fluting and subtle entasis.</summary>
+        public static Mesh FlutedCylinder(string name, float rTop, float rBottom, float h, int flutes = 16, int rings = 6)
+        {
+            int seg = flutes * 3;
+            var v = new List<Vector3>(); var n = new List<Vector3>(); var uv = new List<Vector2>(); var tri = new List<int>();
+            for (int r = 0; r <= rings; r++)
+            {
+                float ty = r / (float)rings;
+                // Classical entasis: slight convex swell at 1/3 height
+                float entasis = Mathf.Sin(ty * Mathf.PI) * 0.018f * rBottom;
+                float baseR = Mathf.Lerp(rBottom, rTop, ty) + entasis;
+                float fluteFade = Mathf.SmoothStep(0f, 1f, Mathf.Min(ty / 0.08f, (1f - ty) / 0.08f));
+                for (int i = 0; i <= seg; i++)
+                {
+                    float u = i / (float)seg;
+                    float a = u * Mathf.PI * 2f;
+                    float groove = Mathf.Max(0f, Mathf.Sin(u * flutes * Mathf.PI * 2f)) * 0.042f * rBottom * fluteFade;
+                    float rad = baseR - groove;
+                    Vector3 dir = new(Mathf.Cos(a), 0f, Mathf.Sin(a));
+                    v.Add(dir * rad + Vector3.up * (ty * h));
+                    n.Add(dir);
+                    uv.Add(new Vector2(u * 2f, ty * h * 0.5f));
+                }
+            }
+            int stride = seg + 1;
+            for (int r = 0; r < rings; r++)
+            {
+                for (int i = 0; i < seg; i++)
+                {
+                    int a = r * stride + i;
+                    int b = a + stride;
+                    tri.AddRange(new[] { a, a + 1, b, a + 1, b + 1, b });
+                }
+            }
+            return Save(name, FromLists(name, v, n, uv, tri));
+        }
+
+        /// <summary>Anatomically tapered limb/finger segment extending downward from 0 to -len with rounded joint caps.</summary>
+        public static Mesh RoundedLimb(string name, float rTop, float rBottom, float len, int seg = 16)
+        {
+            var v = new List<Vector3>(); var n = new List<Vector3>(); var uv = new List<Vector2>(); var tri = new List<int>();
+            int rings = 8;
+            for (int r = 0; r <= rings; r++)
+            {
+                float t = r / (float)rings;
+                float y, rad;
+                if (t < 0.15f)
+                {
+                    float kt = t / 0.15f;
+                    y = (1f - kt) * (rTop * 0.45f);
+                    rad = rTop * Mathf.Sin(kt * Mathf.PI * 0.5f);
+                }
+                else if (t > 0.85f)
+                {
+                    float kb = (t - 0.85f) / 0.15f;
+                    y = -len - kb * (rBottom * 0.45f);
+                    rad = rBottom * Mathf.Cos(kb * Mathf.PI * 0.5f);
+                }
+                else
+                {
+                    float km = (t - 0.15f) / 0.70f;
+                    // subtle anatomical muscle belly curve
+                    float belly = Mathf.Sin(km * Mathf.PI) * 0.06f * rTop;
+                    y = -km * len;
+                    rad = Mathf.Lerp(rTop, rBottom, km) + belly;
+                }
+                for (int i = 0; i <= seg; i++)
+                {
+                    float u = i / (float)seg;
+                    float a = u * Mathf.PI * 2f;
+                    Vector3 dir = new(Mathf.Cos(a), 0f, Mathf.Sin(a));
+                    v.Add(dir * rad + Vector3.up * y);
+                    n.Add(dir);
+                    uv.Add(new Vector2(u, t));
+                }
+            }
+            int stride = seg + 1;
+            for (int r = 0; r < rings; r++)
+                for (int i = 0; i < seg; i++)
+                {
+                    int a = r * stride + i, b = a + stride;
+                    tri.AddRange(new[] { a, b, a + 1, a + 1, b, b + 1 });
+                }
+            return Save(name, FromLists(name, v, n, uv, tri));
+        }
+
+        /// <summary>Hanging velvet stanchion cord along local X from -span/2 to +span/2 with natural sag.</summary>
+        public static Mesh CatenaryRope(string name, float span, float sag = 0.22f, float radius = 0.022f, int seg = 16, int tube = 8)
+        {
+            var v = new List<Vector3>(); var n = new List<Vector3>(); var uv = new List<Vector2>(); var tri = new List<int>();
+            for (int i = 0; i <= seg; i++)
+            {
+                float t = i / (float)seg;
+                float x = Mathf.Lerp(-span * 0.5f, span * 0.5f, t);
+                float y = -Mathf.Sin(t * Mathf.PI) * sag;
+                float dy = -Mathf.Cos(t * Mathf.PI) * Mathf.PI * sag / Mathf.Max(0.1f, span);
+                Vector3 tangent = new Vector3(1f, dy, 0f).normalized;
+                Vector3 up = Vector3.Cross(tangent, Vector3.forward).normalized;
+                for (int j = 0; j <= tube; j++)
+                {
+                    float b = j / (float)tube * Mathf.PI * 2f;
+                    Vector3 off = (up * Mathf.Cos(b) + Vector3.forward * Mathf.Sin(b)) * radius;
+                    v.Add(new Vector3(x, y, 0f) + off);
+                    n.Add(off.normalized);
+                    uv.Add(new Vector2(t * 4f, j / (float)tube));
+                }
+            }
+            int stride = tube + 1;
+            for (int i = 0; i < seg; i++)
+                for (int j = 0; j < tube; j++)
+                {
+                    int a = i * stride + j, b = a + stride;
+                    tri.AddRange(new[] { a, b, a + 1, a + 1, b, b + 1 });
+                }
             return Save(name, FromLists(name, v, n, uv, tri));
         }
 
@@ -146,8 +264,6 @@ namespace DHJ.EditorTools
             return Save(name, FromLists(name, v, n, uv, tri));
         }
 
-        /// <summary>Hemisphere/band utilities above share this winding convention:
-        /// Unity front faces are CLOCKWISE when viewed from outside.</summary>
         /// <summary>Triangular prism (roof gable) with base at y=0, ridge along Z.</summary>
         public static Mesh Gable(string name, float w, float h, float d)
         {
@@ -171,13 +287,13 @@ namespace DHJ.EditorTools
                 tri.AddRange(new[] { i, i + 1, i + 2 });
             }
 
-            Vector3 nLeft  = Vector3.Cross(E - A, F - A).normalized;   // outward left-up
-            Vector3 nRight = Vector3.Cross(C - B, F - B).normalized;   // outward right-up
-            Quad(A, D, F, E, nLeft);        // left slope (CCW loop for helper)
-            Quad(B, C, F, E, nRight);       // right slope
-            Tri(A, E, B, Vector3.forward);  // front gable triangle
-            Tri(C, F, D, Vector3.back);     // back gable triangle
-            Quad(A, D, C, B, Vector3.down); // underside
+            Vector3 nLeft  = Vector3.Cross(E - A, F - A).normalized;
+            Vector3 nRight = Vector3.Cross(C - B, F - B).normalized;
+            Quad(A, D, F, E, nLeft);
+            Quad(B, C, F, E, nRight);
+            Tri(A, E, B, Vector3.forward);
+            Tri(C, F, D, Vector3.back);
+            Quad(A, D, C, B, Vector3.down);
             return Save(name, FromLists(name, v, nrm, uv, tri));
         }
 
@@ -190,7 +306,7 @@ namespace DHJ.EditorTools
             var v = new List<Vector3>(); var n = new List<Vector3>(); var uv = new List<Vector2>(); var tri = new List<int>();
             for (int i = 0; i <= seg; i++)
             {
-                float a = i / (float)seg * Mathf.PI;    // half arc
+                float a = i / (float)seg * Mathf.PI;
                 Vector3 center = new(Mathf.Cos(a) * major, Mathf.Sin(a) * major, 0);
                 for (int j = 0; j <= 8; j++)
                 {

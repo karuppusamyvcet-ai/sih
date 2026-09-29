@@ -9,12 +9,13 @@ namespace DHJ.AudioSys
     /// <summary>
     /// Central audio: category volumes (master/music/voice/sfx) applied directly to
     /// sources — no AudioMixer asset required, so nothing can arrive "missing".
-    /// Clips are found by convention under Assets/Audio (loaded via Resources-lite
-    /// path resolution from generated scene references; see SceneAudio in scenes).
+    /// Includes 3D spatial rolloff, pitch-respecting one-shots, and acoustic hall
+    /// low-pass filtering when viewing modal panels.
     /// </summary>
     public class AudioManager : MonoBehaviour
     {
         private AudioSource _music, _ambience, _voice;
+        private AudioLowPassFilter _musicLpf, _ambienceLpf;
         private readonly Dictionary<SfxId, AudioClip> _sfx = new();
 
         public void Initialize()
@@ -22,6 +23,12 @@ namespace DHJ.AudioSys
             _music    = Source("Music", loop: true, spatial: false);
             _ambience = Source("Ambience", loop: true, spatial: false);
             _voice    = Source("Voice", loop: false, spatial: false);
+
+            _musicLpf = _music.gameObject.AddComponent<AudioLowPassFilter>();
+            _musicLpf.cutoffFrequency = 22000f;
+            _ambienceLpf = _ambience.gameObject.AddComponent<AudioLowPassFilter>();
+            _ambienceLpf.cutoffFrequency = 22000f;
+
             ApplyVolumes();
             EventBus.Subscribe<AccessibilityChanged>(_ => ApplyVolumes());
         }
@@ -46,8 +53,15 @@ namespace DHJ.AudioSys
             var s = GameManager.I.Settings.Data;
             AudioListener.volume = s.master;
             if (_music)    _music.volume    = s.music;
-            if (_ambience) _ambience.volume = s.music * 0.6f;
+            if (_ambience) _ambience.volume = s.music * 0.65f;
             if (_voice)    _voice.volume    = s.voice;
+        }
+
+        public void SetModalAcoustics(bool modalOpen)
+        {
+            float targetCutoff = modalOpen ? 4800f : 22000f;
+            if (_musicLpf != null) _musicLpf.cutoffFrequency = targetCutoff;
+            if (_ambienceLpf != null) _ambienceLpf.cutoffFrequency = modalOpen ? 6200f : 22000f;
         }
 
         public void PlayMusic(AudioClip clip)
@@ -74,18 +88,36 @@ namespace DHJ.AudioSys
         {
             if (!_sfx.TryGetValue(id, out var clip) || clip == null) return;
             float v = GameManager.I.Settings.Data.sfx;
+
+            // Subtle natural humanization on organic world sounds
+            if (Mathf.Approximately(pitch, 1f) && (id == SfxId.PageTurn || id == SfxId.ExhibitOpen || id == SfxId.UiHover))
+                pitch = Random.Range(0.97f, 1.03f);
+
+            var go = new GameObject("sfx_" + id);
             if (pos.HasValue)
             {
-                AudioSource.PlayClipAtPoint(clip, pos.Value, v);
+                go.transform.position = pos.Value;
+                var src = go.AddComponent<AudioSource>();
+                src.clip = clip;
+                src.volume = v;
+                src.pitch = pitch;
+                src.spatialBlend = 0.82f;
+                src.rolloffMode = AudioRolloffMode.Linear;
+                src.minDistance = 2.0f;
+                src.maxDistance = 26f;
+                src.Play();
+                Destroy(go, clip.length / Mathf.Max(0.05f, pitch) + 0.15f);
             }
             else
             {
-                var go = new GameObject("sfx_oneshot");
                 go.transform.SetParent(transform, false);
                 var src = go.AddComponent<AudioSource>();
-                src.clip = clip; src.volume = v; src.pitch = pitch; src.spatialBlend = 0f;
+                src.clip = clip;
+                src.volume = v;
+                src.pitch = pitch;
+                src.spatialBlend = 0f;
                 src.Play();
-                Destroy(go, clip.length / Mathf.Max(0.01f, pitch) + 0.1f);
+                Destroy(go, clip.length / Mathf.Max(0.05f, pitch) + 0.15f);
             }
         }
     }

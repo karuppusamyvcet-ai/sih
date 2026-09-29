@@ -6,8 +6,9 @@ namespace DHJ.EditorTools
     /// <summary>
     /// Automatic import settings for the procedurally generated assets:
     /// UI/Images PNGs -> Sprites (rounded ones sliced for 9-slice panels),
-    /// WAVs kept as streaming-friendly compressed clips.
-    /// This runs before any generation menu command, so no .meta hand-editing.
+    /// *_n.png in Textures -> Tangent-space NormalMap with anisotropic filtering,
+    /// Albedo textures -> Repeat + mipmaps + anisotropic filtering (anisoLevel 8),
+    /// WAVs kept as streaming-friendly clips.
     /// </summary>
     public class AssetImportRules : AssetPostprocessor
     {
@@ -21,6 +22,7 @@ namespace DHJ.EditorTools
                 ti.spriteImportMode = SpriteImportMode.Single;
                 ti.alphaIsTransparency = true;
                 ti.mipmapEnabled = false;
+                ti.filterMode = FilterMode.Bilinear;
                 int border = 0;
                 if (path.EndsWith("ui_rounded.png") || path.EndsWith("ui_rounded_gold.png")) border = 8;
                 else if (path.EndsWith("ui_rounded_soft.png")) border = 18;
@@ -30,8 +32,12 @@ namespace DHJ.EditorTools
             else if (path.Contains("Assets/Art/Textures/"))
             {
                 var ti = (TextureImporter)assetImporter;
+                bool isNormal = path.EndsWith("_n.png");
+                ti.textureType = isNormal ? TextureImporterType.NormalMap : TextureImporterType.Default;
                 ti.wrapMode = TextureWrapMode.Repeat;
                 ti.mipmapEnabled = true;
+                ti.filterMode = FilterMode.Trilinear;
+                ti.anisoLevel = 8;
                 ti.maxTextureSize = 1024;
             }
         }
@@ -40,8 +46,10 @@ namespace DHJ.EditorTools
         {
             var ai = (AudioImporter)assetImporter;
             var s = ai.defaultSampleSettings;
-            s.loadType = AudioClipLoadType.DecompressOnLoad;
-            s.compressionFormat = AudioCompressionFormat.PCM;
+            bool isLoop = assetPath.Contains("/Music/") || assetPath.Contains("/Ambience/");
+            s.loadType = isLoop ? AudioClipLoadType.Streaming : AudioClipLoadType.DecompressOnLoad;
+            s.compressionFormat = isLoop ? AudioCompressionFormat.Vorbis : AudioCompressionFormat.PCM;
+            s.quality = 0.85f;
             ai.defaultSampleSettings = s;
         }
     }
