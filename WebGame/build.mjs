@@ -7,6 +7,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(root, '..');
 const out = resolve(root, 'dist/game');
 const watch = process.argv.includes('--watch');
+const debugBuild = process.argv.includes('--debug') || !!process.env.DHJ_DEBUG;
 
 mkdirSync(out, { recursive: true });
 
@@ -56,12 +57,12 @@ const opts = {
   outfile: resolve(out, 'game.js'),
   format: 'iife',
   target: ['es2020'],
-  minify: !watch,
-  sourcemap: watch,
+  minify: !watch && !debugBuild,
+  sourcemap: watch || debugBuild,
   logLevel: 'info',
   // fail loudly on anything esbuild would otherwise only warn about
   logOverride: { 'no-matching-export': 'error', 'unsupported-dynamic-import': 'error' },
-  define: { 'process.env.NODE_ENV': watch ? '"development"' : '"production"' },
+  define: { 'process.env.NODE_ENV': (watch || debugBuild) ? '"development"' : '"production"' },
 };
 
 copyAssets();

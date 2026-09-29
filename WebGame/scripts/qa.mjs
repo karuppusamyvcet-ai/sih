@@ -27,8 +27,9 @@ const server = createServer(async (req, res) => {
   }
 });
 await new Promise((r) => server.listen(PORT, '0.0.0.0', r));
-console.log('serving', root, 'on', PORT);
+console.log('serving', root, 'on', PORT, debug ? '(debug/unminified build)' : '(minified build)');
 
+const debug = process.argv.includes('--debug');
 const errors = [];
 let failCount = 0;
 const failedChecks = [];
@@ -40,8 +41,8 @@ const browser = await puppeteer.launch({
   defaultViewport: { width: 1280, height: 720 },
 });
 const page = await browser.newPage();
-page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
-page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 600)); });
+page.on('pageerror', (e) => errors.push('pageerror: ' + e.message + ' ||STACK|| ' + String(e.stack || '').replace(/\s+/g, ' ').slice(0, 1200)));
 
 const SHOT_DIR = new URL('./shots/', import.meta.url).pathname;
 mkdirSync(SHOT_DIR, { recursive: true });
@@ -50,6 +51,7 @@ const shot = async (name) => {
   catch (e) { errors.push('screenshot ' + name + ': ' + e.message); }
 };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const tap = (sel) => page.evaluate((s) => { const el = document.querySelector(s); if (!el) throw new Error('missing ' + s); el.click(); }, sel);
 
 try {
   await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -59,12 +61,12 @@ try {
   await shot('01-menu');
 
   // --- start new game ---
-  await page.click('#btnNew');
+  await tap('#btnNew');
   await page.waitForFunction(() => !document.getElementById('intro').classList.contains('hidden'), { timeout: 5000 }).catch(() => {});
   await wait(1600);
   await shot('02-intro');
   // skip intro
-  await page.click('#btnSkipIntro').catch(() => {});
+  await tap('#btnSkipIntro').catch(() => {});
   await wait(2500);
   await shot('03-hub');
 
@@ -144,7 +146,7 @@ try {
       if (opt) opt.click();
     });
     await wait(300);
-    await page.click('#quizNext').catch(() => {});
+    await tap('#quizNext').catch(() => {});
     await wait(500);
     await shot('12-quiz-answered');
     // close quiz
@@ -168,7 +170,7 @@ try {
   await page.keyboard.press('KeyE');
   await wait(700);
   await page.type('#archQ', 'constitution');
-  await page.click('#btnArchSearch');
+  await tap('#btnArchSearch');
   await wait(600);
   await shot('14-archive-search');
   await page.keyboard.press('Escape');
@@ -190,7 +192,7 @@ try {
   await page.keyboard.press('KeyE');
   await wait(700);
   await page.type('#aiQ', 'What are Fundamental Rights?');
-  await page.click('#btnAiAsk');
+  await tap('#btnAiAsk');
   await wait(1600);
   await shot('16-ai-guide');
   await page.keyboard.press('Escape');

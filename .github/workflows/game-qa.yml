@@ -43,9 +43,9 @@ jobs:
         working-directory: WebGame
         run: node scripts/filesmoke.mjs | tee filesmoke.log
 
-      - name: Build the game
+      - name: Build the game (unminified so CI stack traces are readable)
         working-directory: WebGame
-        run: npm run build
+        run: node build.mjs --debug
 
       - name: Bundle the game
         run: |
@@ -66,7 +66,7 @@ jobs:
       - name: Run headless play-through QA
         working-directory: WebGame
         continue-on-error: true
-        run: node scripts/qa.mjs --port 8410 | tee qa.log
+        run: node scripts/qa.mjs --port 8410 --debug | tee qa.log
 
       - name: Show QA report
         if: always()
