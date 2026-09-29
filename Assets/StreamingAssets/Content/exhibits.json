@@ -1,0 +1,116 @@
+{
+  "zones": [
+    {
+      "zoneId": "early_life",
+      "title": "EARLY LIFE & EDUCATION",
+      "exhibits": [
+        { "id": "el_birth", "archiveId": "bio_birth_1891", "kind": "Pedestal", "title": "1891 — Mhow" },
+        { "id": "el_school", "archiveId": "bio_school", "kind": "WallPanel", "title": "School Years" },
+        { "id": "el_ba", "archiveId": "edu_ba_1912", "kind": "Pedestal", "title": "Graduation, 1912" },
+        { "id": "el_columbia", "archiveId": "edu_columbia", "kind": "DisplayCase", "title": "Columbia University" },
+        { "id": "el_lse", "archiveId": "edu_lse", "kind": "DisplayCase", "title": "London: LSE & Gray's Inn" },
+        { "id": "el_quiz", "archiveId": "", "kind": "QuizKiosk", "quizId": "quiz_early_life", "title": "Knowledge Checkpoint" }
+      ],
+      "timeline": [
+        { "year": "1891", "text": "Born at Mhow" },
+        { "year": "1900s", "text": "School in Satara & Bombay; faces caste discrimination" },
+        { "year": "1907", "text": "Matriculation, Elphinstone High School" },
+        { "year": "1912", "text": "B.A., Elphinstone College, Bombay" },
+        { "year": "1913", "text": "Baroda scholarship — Columbia University, New York" },
+        { "year": "1916", "text": "London School of Economics & Gray's Inn" },
+        { "year": "1918", "text": "Professor, Sydenham College, Bombay" },
+        { "year": "1923", "text": "D.Sc. (London); publishes The Problem of the Rupee" }
+      ]
+    },
+    {
+      "zoneId": "social_reform",
+      "title": "SOCIAL REFORM",
+      "exhibits": [
+        { "id": "sr_mooknayak", "archiveId": "ref_mooknayak", "kind": "DisplayCase", "title": "Mooknayak, 1920" },
+        { "id": "sr_bks", "archiveId": "ref_bks_1924", "kind": "WallPanel", "title": "Bahishkrit Hitakarini Sabha" },
+        { "id": "sr_mahad", "archiveId": "ref_mahad_1927", "kind": "Pedestal", "title": "Mahad Satyagraha" },
+        { "id": "sr_kalaram", "archiveId": "ref_kalaram_1930", "kind": "WallPanel", "title": "Kalaram Temple Satyagraha" },
+        { "id": "sr_rtc", "archiveId": "ref_rtc", "kind": "WallPanel", "title": "Round Table Conferences" },
+        { "id": "sr_poona", "archiveId": "ref_poona_pact", "kind": "DisplayCase", "title": "Poona Pact, 1932" },
+        { "id": "sr_ilp", "archiveId": "ref_ilp_1936", "kind": "WallPanel", "title": "Independent Labour Party" },
+        { "id": "sr_labour", "archiveId": "ref_labour_1942", "kind": "Pedestal", "title": "Labour Reforms, 1942–46" },
+        { "id": "sr_quiz", "archiveId": "", "kind": "QuizKiosk", "quizId": "quiz_social_reform", "title": "Match & Verify" }
+      ],
+      "timeline": [
+        { "year": "1920", "text": "Mooknayak — 'Leader of the Voiceless'" },
+        { "year": "1924", "text": "Bahishkrit Hitakarini Sabha founded" },
+        { "year": "1927", "text": "Mahad Satyagraha; Manusmriti burned" },
+        { "year": "1930", "text": "Kalaram Temple Satyagraha begins" },
+        { "year": "1930–32", "text": "Round Table Conferences, London" },
+        { "year": "1932", "text": "Poona Pact — reserved seats in joint electorates" },
+        { "year": "1936", "text": "Independent Labour Party founded" },
+        { "year": "1942", "text": "Labour Member, Viceroy's Executive Council" }
+      ]
+    },
+    {
+      "zoneId": "constitution",
+      "title": "LAW & CONSTITUTION",
+      "exhibits": [
+        { "id": "ct_table", "archiveId": "const_preamble", "kind": "ConstitutionTable", "title": "The Preamble" },
+        { "id": "ct_lawmin", "archiveId": "const_lawminister", "kind": "WallPanel", "title": "First Law Minister" },
+        { "id": "ct_drafting", "archiveId": "const_drafting", "kind": "DisplayCase", "title": "Drafting Committee" },
+        { "id": "ct_fr", "archiveId": "const_fundamental_rights", "kind": "WallPanel", "title": "Fundamental Rights" },
+        { "id": "ct_adopt", "archiveId": "const_adoption", "kind": "WallPanel", "title": "26 Nov 1949 / 26 Jan 1950" },
+        { "id": "ct_art32", "archiveId": "quote_article32_ctx", "kind": "Pedestal", "title": "Article 32 — Heart & Soul" },
+        { "id": "ct_quiz", "archiveId": "", "kind": "QuizKiosk", "quizId": "quiz_constitution", "title": "Preamble Challenge" }
+      ],
+      "timeline": [
+        { "year": "1947", "text": "First Law Minister; Chairman, Drafting Committee" },
+        { "year": "1947–49", "text": "Constituent Assembly debates the draft" },
+        { "year": "1949", "text": "Constitution adopted — 26 November" },
+        { "year": "1950", "text": "In force — 26 January; India becomes a Republic" },
+        { "year": "1951", "text": "Resigns from Cabinet" }
+      ]
+    },
+    {
+      "zoneId": "scholarship",
+      "title": "BOOKS, MANUSCRIPTS & SCHOLARSHIP",
+      "exhibits": [
+        { "id": "sc_rupee", "archiveId": "book_rupee", "kind": "BookDesk", "title": "The Problem of the Rupee" },
+        { "id": "sc_aoc", "archiveId": "book_aoc", "kind": "BookDesk", "title": "Annihilation of Caste" },
+        { "id": "sc_shudras", "archiveId": "book_wcbs", "kind": "BookDesk", "title": "Who Were the Shudras?" },
+        { "id": "sc_buddha", "archiveId": "book_buddha", "kind": "BookDesk", "title": "The Buddha and His Dhamma" },
+        { "id": "sc_terminal", "archiveId": "", "kind": "ArchiveTerminal", "title": "Searchable Archive Terminal" }
+      ],
+      "timeline": []
+    },
+    {
+      "zoneId": "memorials",
+      "title": "MEMORIALS & HISTORICAL PLACES",
+      "exhibits": [
+        { "id": "mm_mhow", "archiveId": "mem_mhow", "kind": "MonumentDiorama", "diorama": "MhowHouse", "title": "Janmabhoomi, Mhow" },
+        { "id": "mm_chaitya", "archiveId": "mem_chaityabhoomi", "kind": "MonumentDiorama", "diorama": "ChaityaBhoomi", "title": "Chaitya Bhoomi, Mumbai" },
+        { "id": "mm_deeksha", "archiveId": "mem_deekshabhoomi", "kind": "MonumentDiorama", "diorama": "Deekshabhoomi", "title": "Deekshabhoomi, Nagpur" },
+        { "id": "mm_alipur", "archiveId": "mem_delhi_26alipur", "kind": "MonumentDiorama", "diorama": "AlipurHouse", "title": "26 Alipur Road, Delhi" },
+        { "id": "mm_lucknow", "archiveId": "mem_lucknow_park", "kind": "MonumentDiorama", "diorama": "LucknowPark", "title": "Ambedkar Park, Lucknow" },
+        { "id": "mm_london", "archiveId": "mem_london_house", "kind": "MonumentDiorama", "diorama": "LondonHouse", "title": "Ambedkar House, London" }
+      ],
+      "timeline": []
+    },
+    {
+      "zoneId": "legacy",
+      "title": "LEGACY & DIGITAL ARCHIVE",
+      "exhibits": [
+        { "id": "lg_buddhism", "archiveId": "legacy_buddhism", "kind": "WallPanel", "title": "14 October 1956" },
+        { "id": "lg_mahaparinirvan", "archiveId": "legacy_mahaparinirvan", "kind": "WallPanel", "title": "Mahaparinirvan, 6 Dec 1956" },
+        { "id": "lg_motto", "archiveId": "quote_motto", "kind": "WallPanel", "title": "Educate, Agitate, Organise" },
+        { "id": "lg_global", "archiveId": "legacy_smritivanam", "kind": "WallPanel", "title": "A Global Legacy" },
+        { "id": "lg_terminal", "archiveId": "", "kind": "ArchiveTerminal", "title": "Digital Archive Wall" },
+        { "id": "lg_ai", "archiveId": "", "kind": "AIConsole", "title": "Archive Guide (AI)" },
+        { "id": "lg_final", "archiveId": "", "kind": "QuizKiosk", "quizId": "quiz_final", "title": "Final Knowledge Challenge" }
+      ],
+      "timeline": [
+        { "year": "1956", "text": "Embraces Buddhism at Nagpur — 14 October" },
+        { "year": "1956", "text": "Mahaparinirvan — 6 December, Delhi" },
+        { "year": "1957", "text": "The Buddha and His Dhamma published posthumously" },
+        { "year": "1990", "text": "Bharat Ratna (posthumous)" },
+        { "year": "2016–", "text": "Ambedkar Jayanti observed at the United Nations" }
+      ]
+    }
+  ]
+}
