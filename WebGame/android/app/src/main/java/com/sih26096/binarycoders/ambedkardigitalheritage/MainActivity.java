@@ -51,6 +51,11 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        // the game ships an embedded content bundle; these keep any incidental
+        // local resource reads working from the file:// origin
+        s.setAllowFileAccessFromFileURLs(true);
+        s.setAllowUniversalAccessFromFileURLs(true);
+        s.setGeolocationEnabled(false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             s.setSafeBrowsingEnabled(false);
         }

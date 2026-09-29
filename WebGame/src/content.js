@@ -1,10 +1,29 @@
 // ---------- loads StreamingAssets content ----------
+// Works in every runtime: the build bakes the JSON into window.DHJ_CONTENT
+// (needed for file:// in the desktop EXE and the Android WebView); when the
+// game is served over http(s) we prefer the live files so content edits show
+// up without a rebuild.
+const EMBEDDED = () => (typeof window !== 'undefined' && window.DHJ_CONTENT) || null;
+
+async function tryFetch(path) {
+  if (location.protocol === 'file:') throw new Error('file://');
+  const r = await fetch(path, { cache: 'no-cache' });
+  if (!r.ok) throw new Error(path + ' → ' + r.status);
+  return r.json();
+}
+
+async function loadOne(key, file) {
+  const emb = EMBEDDED();
+  if (emb && emb[key]) return emb[key];
+  return tryFetch(file);
+}
+
 export async function loadContent() {
   const [archive, exhibits, missions, quizzes] = await Promise.all([
-    fetch('content/archive_items.json').then((r) => r.json()),
-    fetch('content/exhibits.json').then((r) => r.json()),
-    fetch('content/missions.json').then((r) => r.json()),
-    fetch('content/quizzes.json').then((r) => r.json()),
+    loadOne('archive', 'content/archive_items.json'),
+    loadOne('exhibits', 'content/exhibits.json'),
+    loadOne('missions', 'content/missions.json'),
+    loadOne('quizzes', 'content/quizzes.json'),
   ]);
   const byId = new Map();
   for (const it of archive.items) byId.set(it.id, it);
@@ -18,7 +37,15 @@ export async function loadContent() {
     missions: missions.missions,
     quizzes: quizzes.quizzes, quizById,
     zoneMeta, zoneOfQuiz: (quizId) => (quizById.get(quizId) || {}).zone,
+    source: EMBEDDED() ? 'embedded' : 'http',
   };
+}
+
+// localization shares the same embedded-bundle trick
+export async function loadLocalizationFile(lang) {
+  const emb = EMBEDDED();
+  if (emb && emb.loc && emb.loc[lang]) return emb.loc[lang];
+  return tryFetch(`localization/${lang}.json`);
 }
 
 // static presentation metadata per zone (mirrors MuseumBuilder.cs)

@@ -25,7 +25,6 @@ export function createMissions(ctx) {
         return `Exhibits opened: ${Math.min(n, 2)}/2 · ${m.objective}`;
       }
       case 'CompleteQuiz': {
-        if (m.id === 'm3_complete_quiz' || m.id === 'm3') { }
         const qz = quizForMission(m);
         const best = qz ? st.quizBest[qz] : null;
         if (qz && st.quizBest[qz] !== undefined) return 'Checkpoint cleared · ' + m.objective;
@@ -102,8 +101,7 @@ export function createMissions(ctx) {
           st.memorialsSeen[data.id] = true;
           const n = Object.keys(st.memorialsSeen).length;
           st.stats.memorials = n;
-          if (n >= 2 && m.id.includes('memorial')) hit = true;
-          else if (n >= 2) hit = true;
+          if (n >= 2) hit = true;
         }
         break;
       case 'AskAssistant':
@@ -125,31 +123,6 @@ export function createMissions(ctx) {
   }
 
   // door unlocking --------------------------------------------------
-  function unlockedIndex() {
-    // how many doors of the chain are open (index into ZONE_CHAIN)
-    let n = 0;
-    for (let i = 0; i < ZONE_CHAIN.length; i++) {
-      const mi = ['m1_enter', 'm2_earlylife', 'm3_reform', 'm4_constitution', 'm5_archive', 'm6_memorials'];
-      // progressive: door i unlocked when mission i (0-based) done? door0 after m1, door1 after m2...
-      const gateMission = M[i];   // m1..m6 gate doors 0..5? see below
-      if (settings.presentation) return ZONE_CHAIN.length;
-      if (i === 0) {
-        if (done('m1_enter')) n = 1; else break;
-      } else if (i === 1) {
-        if (done('m2_earlylife')) n = 2; else break;
-      } else if (i === 2) {
-        if (done('m3_reform') || done('m3')) n = 3; else break;
-      } else if (i === 3) {
-        if (done(mIds.constitution)) n = 4; else break;
-      } else if (i === 4) {
-        if (done(mIds.archive)) n = 5; else break;
-      } else if (i === 5) {
-        if (done(mIds.memorials)) n = 6; else break;
-      }
-    }
-    return n;
-  }
-
   const mIds = {
     enter: 'm1_enter',
     early: 'm2_earlylife',
@@ -161,8 +134,10 @@ export function createMissions(ctx) {
     final: 'm8_final',
   };
 
+  const presentation = () => settings.presentation || !!st.presentation;
+
   function isZoneUnlocked(zone) {
-    if (settings.presentation) return true;
+    if (presentation()) return true;
     const idx = ZONE_CHAIN.indexOf(zone);
     if (idx < 0) return true;
     if (idx === 0) return done(mIds.enter);

@@ -1,4 +1,5 @@
 import { $, store } from './core.js';
+import { loadLocalizationFile } from './content.js';
 
 // ---------------- settings ----------------
 const DEFAULTS = {
@@ -20,9 +21,9 @@ export function applySettings() {
 let LOC = {};
 export async function loadLocalization(lang) {
   try {
-    const r = await fetch(`localization/${lang}.json`);
-    LOC = await r.json();
-  } catch { LOC = {}; }
+    const doc = await loadLocalizationFile(lang);
+    LOC = (doc && doc.items) ? doc.items : (doc || {});
+  } catch (e) { console.warn('localization load failed', e); LOC = {}; }
 }
 export function T(key, fallback = '') {
   return (LOC && LOC[key]) || fallback || key;

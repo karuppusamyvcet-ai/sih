@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { $, show, hide, fade, isTouch, Bus, clamp } from './core.js';
-import { settings, saveSettings, applySettings, loadLocalization, newGameState, setState, getState, loadGame, hasSave, saveGame, wipeSave, applySettingsToForm, SAVE_KEY, store } from './state.js';
+import { settings, saveSettings, applySettings, loadLocalization, newGameState, setState, getState, loadGame, hasSave, saveGame, wipeSave, applySettingsToForm } from './state.js';
 import * as audio from './audio.js';
 import { loadContent, zoneMeta, doorOrder } from './content.js';
 import { createGuide } from './ai.js';
