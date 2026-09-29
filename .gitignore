@@ -25,7 +25,7 @@
 *.opendb
 *.VC.db
 
-# Builds (final deliverables live in releases, not git)
+# Builds (final deliverables live in releases/artifacts, not git)
 Builds/Windows/**
 Builds/Android/**
 !Builds/Windows/.gitkeep
@@ -35,6 +35,21 @@ Builds/Android/**
 *.exe
 *.unitypackage
 
+# WebGame build outputs
+WebGame/node_modules/
+WebGame/dist/
+WebGame/release/
+WebGame/scripts/shots/
+WebGame/android/app/build/
+WebGame/android/app/src/main/assets/www/
+WebGame/android/.gradle/
+WebGame/android/build/
+WebGame/android/dhj-release.keystore
+*.log
+
+# packaged web build served from the preview
+/AmbedkarDigitalHeritage-web.zip
+
 # Crash reports / assets store
 crashlytics-build.properties
 /[Aa]ssets/[Aa]ssetStoreTools*
@@ -42,8 +57,3 @@ crashlytics-build.properties
 # OS
 .DS_Store
 Thumbs.db
-
-# packaged web build served from the preview
-/AmbedkarDigitalHeritage-web.zip
-/WebGame/dist/
-/WebGame/release/
