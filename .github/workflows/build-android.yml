@@ -142,7 +142,6 @@ jobs:
           path: release-package/
 
       - name: Ship the built files out (git branch for download)
-      - name: Ship the built files out (git branch for download)
         if: always()
         shell: bash
         env:
@@ -158,13 +157,13 @@ jobs:
           if [ "$n" -eq 0 ]; then echo "::notice::no built files to ship"; exit 0; fi
           ls -lh "$STAGE"
           cd "$STAGE"
-          cat > MANIFEST.txt <<EOF
-Ambedkar: The Digital Heritage Journey
-SIH 2026 - Problem SIH26096 - Team Binary Coders
-built from commit ${GITHUB_SHA}
-workflow run: ${GITHUB_RUN_ID}
-$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-EOF
+          {
+            echo "Ambedkar: The Digital Heritage Journey"
+            echo "SIH 2026 - Problem SIH26096 - Team Binary Coders"
+            echo "built from commit ${GITHUB_SHA}"
+            echo "workflow run: ${GITHUB_RUN_ID}"
+            date -u +"built: %Y-%m-%dT%H:%M:%SZ"
+          } > MANIFEST.txt
           git init -q .
           git config user.email "ci@users.noreply.github.com"
           git config user.name "CI build output"
